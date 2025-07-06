@@ -1,22 +1,18 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
-	AlertCircle,
 	ArrowUpRight,
 	CreditCard,
+	Zap,
+	Plus,
 	Key,
 	KeyRound,
-	Plus,
-	Zap,
 	Activity,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { TopUpCreditsButton } from "@/components/credits/top-up-credits-dialog";
-import { Overview } from "@/components/dashboard/overview";
 import { UpgradeToProDialog } from "@/components/shared/upgrade-to-pro-dialog";
 import { Button } from "@/lib/components/button";
 import {
@@ -31,6 +27,7 @@ import { useDashboardState } from "@/lib/dashboard-state";
 import { useApi } from "@/lib/fetch-client";
 import { cn } from "@/lib/utils";
 import type { ActivitT } from "@/types/activity";
+import { Overview } from "@/components/dashboard/overview";
 
 interface DashboardClientProps {
 	initialActivityData?: ActivitT;
@@ -39,7 +36,6 @@ interface DashboardClientProps {
 export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const queryClient = useQueryClient();
 
 	// Get days from URL params, fallback to initialDays, then to 7
 	const daysParam = searchParams.get("days");
@@ -71,21 +67,6 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 		params.set("days", String(newDays));
 		router.push(`/dashboard?${params.toString()}`);
 	};
-
-	useEffect(() => {
-		if (selectedProject?.id) {
-			const queryKey = api.queryOptions("get", "/activity", {
-				params: {
-					query: {
-						days: String(days),
-						projectId: selectedProject.id,
-					},
-				},
-			}).queryKey;
-
-			queryClient.invalidateQueries({ queryKey });
-		}
-	}, [selectedProject?.id, queryClient, days, api]);
 
 	const activityData = data?.activity || [];
 	const totalRequests =
@@ -299,7 +280,7 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 								<CardTitle className="text-sm font-medium">
 									Tokens Used
 								</CardTitle>
-								<Activity className="text-muted-foreground h-4 w-4" />
+								<CreditCard className="text-muted-foreground h-4 w-4" />
 							</CardHeader>
 							<CardContent>
 								{isLoading ? (
@@ -324,7 +305,7 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 								<CardTitle className="text-sm font-medium">
 									Cost Estimate
 								</CardTitle>
-								<AlertCircle className="text-muted-foreground h-4 w-4" />
+								<CreditCard className="text-muted-foreground h-4 w-4" />
 							</CardHeader>
 							<CardContent>
 								{isLoading ? (

@@ -33,7 +33,11 @@ import type { ActivityModelUsage, DailyActivity } from "@/types/activity";
 import type { TooltipProps } from "recharts";
 
 // Helper function to get all unique models from the data
-function getUniqueModels(data: any[]): string[] {
+function getUniqueModels(
+	data: {
+		modelBreakdown: { model: string }[];
+	}[],
+): string[] {
 	if (!data || data.length === 0) {
 		return [];
 	}
@@ -41,7 +45,7 @@ function getUniqueModels(data: any[]): string[] {
 	const allModels = new Set<string>();
 	data.forEach((day) => {
 		if (day.modelBreakdown && day.modelBreakdown.length > 0) {
-			day.modelBreakdown.forEach((model: any) => {
+			day.modelBreakdown.forEach((model) => {
 				allModels.add(model.model);
 			});
 		}
@@ -72,7 +76,21 @@ function getModelColor(model: string, index: number): string {
 
 interface CustomTooltipProps extends TooltipProps<number, string> {
 	active?: boolean;
-	payload?: any[];
+	payload?: {
+		dataKey: string;
+		value: number;
+		color: string;
+		name: string;
+		payload: {
+			requestCount: number;
+			cost: number;
+			totalTokens: number;
+			modelBreakdown: {
+				model: string;
+				requestCount: number;
+			}[];
+		};
+	}[];
 	label?: string;
 	breakdownField?: "requests" | "cost" | "tokens";
 }
@@ -152,7 +170,11 @@ const CustomTooltip = ({
 	return null;
 };
 
-export function ActivityChart() {
+interface ActivityChartProps {
+	initialData?: unknown;
+}
+
+export function ActivityChart({ initialData }: ActivityChartProps) {
 	const [days, setDays] = useState<7 | 30>(7);
 	const [breakdownField, setBreakdownField] = useState<
 		"requests" | "cost" | "tokens"
@@ -173,6 +195,36 @@ export function ActivityChart() {
 		},
 		{
 			enabled: !!selectedProject?.id,
+			staleTime: 5 * 60 * 1000, // 5 minutes
+			refetchOnWindowFocus: false,
+			initialData: initialData as
+				| {
+						activity: {
+							date: string;
+							requestCount: number;
+							inputTokens: number;
+							outputTokens: number;
+							totalTokens: number;
+							cost: number;
+							inputCost: number;
+							outputCost: number;
+							requestCost: number;
+							errorCount: number;
+							errorRate: number;
+							cacheCount: number;
+							cacheRate: number;
+							modelBreakdown: {
+								model: string;
+								provider: string;
+								requestCount: number;
+								inputTokens: number;
+								outputTokens: number;
+								totalTokens: number;
+								cost: number;
+							}[];
+						}[];
+				  }
+				| undefined,
 		},
 	);
 

@@ -91,12 +91,13 @@ export function PricingPlans() {
 
 			// Redirect to Stripe Checkout
 			window.location.href = checkoutUrl;
-		} catch (error: any) {
+		} catch (error: unknown) {
 			toast({
 				title: "Subscription failed",
 				description:
-					error.message ||
-					"Failed to create checkout session. Please try again.",
+					error instanceof Error
+						? error.message
+						: "Failed to create checkout session. Please try again.",
 				variant: "destructive",
 			});
 			setLoading(null);
@@ -129,11 +130,13 @@ export function PricingPlans() {
 					"Your subscription will remain active until the end of the billing period.",
 			});
 			await fetchSubscriptionStatus();
-		} catch (error: any) {
+		} catch (error: unknown) {
 			toast({
 				title: "Cancellation failed",
 				description:
-					error.message || "Failed to cancel subscription. Please try again.",
+					error instanceof Error
+						? error.message
+						: "Failed to cancel subscription. Please try again.",
 				variant: "destructive",
 			});
 		} finally {
@@ -166,11 +169,13 @@ export function PricingPlans() {
 				description: "Your Pro subscription has been reactivated.",
 			});
 			await fetchSubscriptionStatus();
-		} catch (error: any) {
+		} catch (error: unknown) {
 			toast({
 				title: "Resume failed",
 				description:
-					error.message || "Failed to resume subscription. Please try again.",
+					error instanceof Error
+						? error.message
+						: "Failed to resume subscription. Please try again.",
 				variant: "destructive",
 			});
 		} finally {

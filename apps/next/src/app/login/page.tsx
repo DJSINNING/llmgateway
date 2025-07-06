@@ -61,7 +61,7 @@ export default function Login() {
 					},
 				},
 			});
-		} catch (error) {
+		} catch {
 			setError("root", {
 				message: "An error occurred. Please try again.",
 			});

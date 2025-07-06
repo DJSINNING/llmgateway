@@ -9,10 +9,14 @@ import { useDashboardState } from "@/lib/dashboard-state";
 
 interface DashboardLayoutClientProps {
 	children: ReactNode;
+	initialOrganizationsData?: unknown;
+	initialProjectsData?: unknown;
 }
 
 export function DashboardLayoutClient({
 	children,
+	initialOrganizationsData,
+	initialProjectsData,
 }: DashboardLayoutClientProps) {
 	const {
 		organizations,
@@ -23,7 +27,10 @@ export function DashboardLayoutClient({
 		handleProjectSelect,
 		handleOrganizationCreated,
 		handleProjectCreated,
-	} = useDashboardState();
+	} = useDashboardState({
+		initialOrganizationsData,
+		initialProjectsData,
+	});
 
 	return (
 		<div className="flex min-h-screen w-full flex-col">

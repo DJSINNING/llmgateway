@@ -70,19 +70,27 @@ function SidebarProvider({
 }) {
 	const isMobile = useIsMobile();
 	const [openMobile, setOpenMobile] = React.useState(false);
+	const [mounted, setMounted] = React.useState(false);
 
-	// Read the initial state from localStorage if available
-	const getInitialState = () => {
-		if (typeof window !== "undefined") {
-			const savedState = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-			return savedState === "false" ? false : defaultOpen;
-		}
-		return defaultOpen;
-	};
+	// Track if component has mounted to prevent hydration issues
+	React.useEffect(() => {
+		setMounted(true);
+	}, []);
 
 	// This is the internal state of the sidebar.
 	// We use openProp and setOpenProp for control from outside the component.
-	const [_open, _setOpen] = React.useState(getInitialState);
+	const [_open, _setOpen] = React.useState(defaultOpen);
+
+	// Update internal state from localStorage after mounting
+	React.useEffect(() => {
+		if (mounted && !openProp) {
+			const savedState = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+			if (savedState !== null) {
+				_setOpen(savedState === "true");
+			}
+		}
+	}, [mounted, openProp]);
+
 	const open = openProp ?? _open;
 	const setOpen = React.useCallback(
 		(value: boolean | ((value: boolean) => boolean)) => {

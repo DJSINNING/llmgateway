@@ -27,10 +27,17 @@ export function useUser(options?: UseUserOptions) {
 	const router = useRouter();
 	const api = useApi();
 	const pathname = usePathname();
-	const { data, isLoading, error } = api.useQuery("get", "/user/me", {
-		retry: 0,
-		gcTime: 0,
-	});
+
+	const { data, isLoading, error } = api.useQuery(
+		"get",
+		"/user/me",
+		{},
+		{
+			retry: 0,
+			staleTime: 5 * 60 * 1000, // 5 minutes
+			refetchOnWindowFocus: false,
+		},
+	);
 
 	if (data) {
 		posthog.identify(data.user.id, {

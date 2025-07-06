@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePostHog } from "posthog-js/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { OrganizationSwitcher } from "./organization-switcher";
 import { TopUpCreditsDialog } from "@/components/credits/top-up-credits-dialog";
@@ -72,6 +72,7 @@ import Logo from "@/lib/icons/Logo";
 import { cn } from "@/lib/utils";
 
 import type { Organization, User } from "@/lib/types";
+import type { LucideIcon } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 // Configuration
@@ -198,6 +199,7 @@ function NavigationItem({
 						: "text-foreground/70 hover:bg-accent hover:text-accent-foreground",
 				)}
 				onClick={onClick}
+				prefetch={true}
 			>
 				<item.icon className="h-4 w-4" />
 				<span>{item.label}</span>
@@ -239,6 +241,7 @@ function ProjectSettingsSection({
 										toggleSidebar();
 									}
 								}}
+								prefetch={true}
 							>
 								<span>{item.label}</span>
 							</Link>
@@ -280,6 +283,7 @@ function OrganizationSection({
 									toggleSidebar();
 								}
 							}}
+							prefetch={true}
 						>
 							<KeyRound className="h-4 w-4" />
 							<span>Provider Keys</span>
@@ -310,6 +314,7 @@ function OrganizationSection({
 													toggleSidebar();
 												}
 											}}
+											prefetch={true}
 										>
 											<span>{item.label}</span>
 										</Link>
@@ -333,7 +338,7 @@ function ToolsResourcesSection({
 	toolsResources: readonly {
 		href: string;
 		label: string;
-		icon: any;
+		icon: LucideIcon;
 		internal: boolean;
 	}[];
 	isActive: (path: string) => boolean;
@@ -363,6 +368,7 @@ function ToolsResourcesSection({
 											toggleSidebar();
 										}
 									}}
+									prefetch={true}
 								>
 									<item.icon className="h-4 w-4" />
 									<span>{item.label}</span>
@@ -391,6 +397,21 @@ function ToolsResourcesSection({
 
 function ThemeSelect() {
 	const { theme, setTheme } = useTheme();
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	if (!mounted) {
+		return (
+			<div className="px-2 py-1.5">
+				<div className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+					<span className="text-muted-foreground">Select theme</span>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="px-2 py-1.5">
@@ -539,6 +560,7 @@ function UserDropdownMenu({
 												toggleSidebar();
 											}
 										}}
+										prefetch={true}
 									>
 										<item.icon className="mr-2 h-4 w-4" />
 										{item.label}
@@ -587,7 +609,9 @@ function UpgradeCTA({
 				</p>
 			</div>
 			<Button asChild>
-				<Link href="/dashboard/settings/billing">Upgrade</Link>
+				<Link href="/dashboard/settings/billing" prefetch={true}>
+					Upgrade
+				</Link>
 			</Button>
 		</div>
 	);
@@ -632,12 +656,21 @@ export function DashboardSidebar({
 
 	const isActive = (path: string) => pathname === path;
 
-	const [showCreditCTA, setShowCreditCTA] = useState(() => {
-		if (typeof window === "undefined") {
-			return true;
+	const [mounted, setMounted] = useState(false);
+	const [showCreditCTA, setShowCreditCTA] = useState(true);
+
+	// Track if component has mounted to prevent hydration issues
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	// Update CTA state from localStorage after mounting
+	useEffect(() => {
+		if (mounted && typeof window !== "undefined") {
+			const hideCTA = localStorage.getItem("hide-credit-cta") === "true";
+			setShowCreditCTA(!hideCTA);
 		}
-		return localStorage.getItem("hide-credit-cta") !== "true";
-	});
+	}, [mounted]);
 
 	const hideCreditCTA = () => {
 		localStorage.setItem("hide-credit-cta", "true");
@@ -718,13 +751,15 @@ export function DashboardSidebar({
 						onHide={hideCreditCTA}
 						selectedOrganization={selectedOrganization}
 					/>
-					{/* <CreditsDisplay selectedOrganization={selectedOrganization} /> */}
-					<UserDropdownMenu
-						user={user}
-						isMobile={isMobile}
-						toggleSidebar={toggleSidebar}
-						onLogout={logout}
-					/>
+					<CreditsDisplay selectedOrganization={selectedOrganization} />
+					{user && (
+						<UserDropdownMenu
+							user={user}
+							isMobile={isMobile}
+							toggleSidebar={toggleSidebar}
+							onLogout={logout}
+						/>
+					)}
 				</SidebarFooter>
 
 				<SidebarRail />

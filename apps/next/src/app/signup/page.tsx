@@ -63,7 +63,7 @@ export default function Signup() {
 					},
 				},
 			});
-		} catch (error) {
+		} catch {
 			setError("root", {
 				message: "An error occurred. Please try again.",
 			});

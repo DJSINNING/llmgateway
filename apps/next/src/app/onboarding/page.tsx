@@ -1,24 +1,17 @@
-"use client";
+import { UserProvider } from "@/components/providers/user-provider";
+import { fetchServerData } from "@/lib/server-api";
+import type { User } from "@/lib/types";
+import { OnboardingClient } from "./onboarding-client";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+export default async function OnboardingPage() {
+	const initialUserData = await fetchServerData<{ user: User }>(
+		"GET",
+		"/user/me",
+	);
 
-import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
-import { useUser } from "@/hooks/useUser";
-
-export default function OnboardingPage() {
-	const router = useRouter();
-	const { user } = useUser();
-
-	useEffect(() => {
-		if (!user) {
-			router.push("/login");
-		}
-	}, [user, router]);
-
-	if (!user) {
-		return null;
-	}
-
-	return <OnboardingWizard />;
+	return (
+		<UserProvider initialUserData={initialUserData}>
+			<OnboardingClient />
+		</UserProvider>
+	);
 }

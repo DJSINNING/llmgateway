@@ -5,12 +5,23 @@ import type { ActivitT } from "@/types/activity";
 export default async function Dashboard({
 	searchParams,
 }: {
-	searchParams: Promise<{
+	searchParams?: Promise<{
 		projectId?: string;
 		days?: string;
 	}>;
 }) {
-	const { projectId, days } = await searchParams;
+	// Safely handle searchParams
+	let projectId: string | undefined;
+	let days: string | undefined;
+	try {
+		const params = searchParams ? await searchParams : {};
+		projectId = params?.projectId;
+		days = params?.days;
+	} catch (error) {
+		console.warn("Failed to parse searchParams:", error);
+		projectId = undefined;
+		days = undefined;
+	}
 
 	// Parse days parameter, default to 7 if not provided or invalid
 	const daysParam = days === "30" ? "30" : "7";

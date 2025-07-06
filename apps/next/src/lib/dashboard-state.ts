@@ -1,6 +1,5 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useMemo } from "react";
@@ -9,12 +8,19 @@ import { useUser } from "@/hooks/useUser";
 import { useApi } from "@/lib/fetch-client";
 import type { Organization, Project } from "@/lib/types";
 
-export function useDashboardState() {
+interface UseDashboardStateProps {
+	initialOrganizationsData?: unknown;
+	initialProjectsData?: unknown;
+}
+
+export function useDashboardState({
+	initialOrganizationsData,
+	initialProjectsData,
+}: UseDashboardStateProps = {}) {
 	const posthog = usePostHog();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const router = useRouter();
-	const queryClient = useQueryClient();
 	const api = useApi();
 
 	useUser({ redirectTo: "/login", redirectWhen: "unauthenticated" });
@@ -24,7 +30,18 @@ export function useDashboardState() {
 	const projectId = searchParams.get("projectId");
 
 	// Fetch organizations
-	const { data: organizationsData } = api.useQuery("get", "/orgs");
+	const { data: organizationsData } = api.useQuery(
+		"get",
+		"/orgs",
+		{},
+		{
+			initialData: initialOrganizationsData as
+				| { organizations: Organization[] }
+				| undefined,
+			staleTime: 5 * 60 * 1000, // 5 minutes
+			refetchOnWindowFocus: false,
+		},
+	);
 	const organizations = useMemo(
 		() => organizationsData?.organizations || [],
 		[organizationsData?.organizations],
@@ -51,6 +68,9 @@ export function useDashboardState() {
 		},
 		{
 			enabled: !!selectedOrganization?.id,
+			initialData: initialProjectsData as { projects: Project[] } | undefined,
+			staleTime: 5 * 60 * 1000, // 5 minutes
+			refetchOnWindowFocus: false,
 		},
 	);
 
@@ -102,12 +122,6 @@ export function useDashboardState() {
 	useEffect(() => {
 		posthog.capture("page_viewed_dashboard");
 	}, [posthog]);
-
-	// Refetch organizations query when navigating between dashboard pages
-	useEffect(() => {
-		const orgsQueryKey = api.queryOptions("get", "/orgs").queryKey;
-		queryClient.invalidateQueries({ queryKey: orgsQueryKey });
-	}, [pathname, api, queryClient]);
 
 	// URL update functions
 	const handleOrganizationCreated = (org: Organization) => {

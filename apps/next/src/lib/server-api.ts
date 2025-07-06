@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import createFetchClient from "openapi-fetch";
 import { cookies } from "next/headers";
 

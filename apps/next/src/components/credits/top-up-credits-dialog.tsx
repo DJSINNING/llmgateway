@@ -56,15 +56,20 @@ export function TopUpCreditsDialog({ children }: TopUpCreditsDialogProps) {
 	const { stripe, isLoading: stripeLoading } = useStripe();
 	const api = useApi();
 
-	const { data: paymentMethodsData } = api.useSuspenseQuery(
-		"get",
-		"/payments/payment-methods",
-	);
+	const { data: paymentMethodsData, isLoading: paymentMethodsLoading } =
+		api.useQuery(
+			"get",
+			"/payments/payment-methods",
+			{},
+			{
+				enabled: open, // Only fetch when dialog is open
+			},
+		);
 
 	const hasPaymentMethods =
 		paymentMethodsData?.paymentMethods &&
 		paymentMethodsData.paymentMethods.length > 0;
-	const defaultPaymentMethod = paymentMethodsData?.paymentMethods.find(
+	const defaultPaymentMethod = paymentMethodsData?.paymentMethods?.find(
 		(pm) => pm.isDefault,
 	);
 
@@ -91,6 +96,9 @@ export function TopUpCreditsDialog({ children }: TopUpCreditsDialogProps) {
 						amount={amount}
 						setAmount={setAmount}
 						onNext={() => {
+							if (paymentMethodsLoading) {
+								return; // Don't proceed if still loading
+							}
 							if (hasPaymentMethods) {
 								setStep("select-payment");
 							} else {
@@ -459,7 +467,16 @@ function SelectPaymentStep({
 	onCancel,
 }: {
 	amount: number;
-	paymentMethods: any[];
+	paymentMethods: {
+		id: string;
+		stripePaymentMethodId: string;
+		type: string;
+		isDefault: boolean;
+		cardBrand?: string;
+		cardLast4?: string;
+		expiryMonth?: number;
+		expiryYear?: number;
+	}[];
 	selectedPaymentMethod: string | null;
 	setSelectedPaymentMethod: (id: string) => void;
 	onUseSelected: () => void;
