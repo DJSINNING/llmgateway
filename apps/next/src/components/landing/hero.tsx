@@ -1,25 +1,20 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, ChevronRight, Copy } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Highlight, themes } from "prism-react-renderer";
-import React from "react";
+import { useEffect, useState } from "react";
 
 import { AnimatedGroup } from "./animated-group";
 import { Navbar } from "./navbar";
 import { AuthLink } from "../shared/auth-link";
-import AnthropicLogo from "@/assets/models/anthropic.svg";
-import CloudriftLogo from "@/assets/models/cloudrift.svg";
-import DeepSeekLogo from "@/assets/models/deepseek.svg";
-import GoogleVertexAILogo from "@/assets/models/google-vertex-ai.svg";
-import GroqLogo from "@/assets/models/groq.svg";
-import InferenceNetLogo from "@/assets/models/inference-net.svg";
-import KlusterAILogo from "@/assets/models/kluster-ai.svg";
-import MistralLogo from "@/assets/models/mistral.svg";
-import OpenAILogo from "@/assets/models/openai.svg";
-import PerplexityLogo from "@/assets/models/perplexity.svg";
-import TogetherAILogo from "@/assets/models/together-ai.svg";
-import XaiLogo from "@/assets/models/xai.svg";
+import {
+	providerLogoUrls,
+	getProviderLogoDarkModeClasses,
+} from "../provider-keys/provider-logo";
 import heroImageLight from "@/assets/new-hero-light.png";
 import heroImageDark from "@/assets/new-hero.png";
 import { Button } from "@/lib/components/button";
@@ -28,6 +23,8 @@ import { useAppConfig } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 import type { Language } from "prism-react-renderer";
+import type { ProviderId } from "@llmgateway/models";
+import type { CSSProperties } from "react";
 
 const transitionVariants = {
 	item: {
@@ -50,20 +47,20 @@ const transitionVariants = {
 };
 
 // Provider logos configuration
-const PROVIDER_LOGOS = [
-	{ name: "OpenAI", src: OpenAILogo },
-	{ name: "Anthropic", src: AnthropicLogo },
-	{ name: "Google Vertex AI", src: GoogleVertexAILogo },
-	{ name: "Mistral", src: MistralLogo },
-	{ name: "Together AI", src: TogetherAILogo },
-	{ name: "Cloudrift", src: CloudriftLogo },
-	{ name: "Kluster AI", src: KlusterAILogo },
-	{ name: "Inference Net", src: InferenceNetLogo },
-	{ name: "Groq", src: GroqLogo },
-	{ name: "xAI", src: XaiLogo },
-	{ name: "DeepSeek", src: DeepSeekLogo },
-	{ name: "Perplexity", src: PerplexityLogo },
-] as const;
+const PROVIDER_LOGOS: { name: string; providerId: ProviderId }[] = [
+	{ name: "OpenAI", providerId: "openai" },
+	{ name: "Anthropic", providerId: "anthropic" },
+	{ name: "Google Vertex AI", providerId: "google-vertex" },
+	{ name: "Mistral", providerId: "mistral" },
+	{ name: "Together AI", providerId: "together.ai" },
+	{ name: "Cloudrift", providerId: "cloudrift" },
+	{ name: "Kluster AI", providerId: "kluster.ai" },
+	{ name: "Inference Net", providerId: "inference.net" },
+	{ name: "Groq", providerId: "groq" },
+	{ name: "xAI", providerId: "xai" },
+	{ name: "DeepSeek", providerId: "deepseek" },
+	{ name: "Perplexity", providerId: "perplexity" },
+];
 
 // TypeScript code example
 const typescriptExample = {
@@ -89,6 +86,11 @@ console.log(response.choices[0].message.content);`,
 export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 	const config = useAppConfig();
 	const { resolvedTheme } = useTheme();
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
 	const copyToClipboard = async (text: string) => {
 		try {
@@ -109,6 +111,7 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 			});
 		}
 	};
+
 	return (
 		<>
 			<Navbar />
@@ -124,48 +127,6 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 					</div>
 					<section>
 						<div className="relative pt-24 md:pt-36">
-							<AnimatedGroup
-								variants={{
-									container: {
-										visible: {
-											transition: {
-												delayChildren: 1,
-											},
-										},
-									},
-									item: {
-										hidden: {
-											opacity: 0,
-											y: 20,
-										},
-										visible: {
-											opacity: 1,
-											y: 0,
-											transition: {
-												type: "spring",
-												bounce: 0.3,
-												duration: 2,
-											},
-										},
-									},
-								}}
-								className="absolute inset-0 -z-20"
-							>
-								<img
-									src={heroImageDark.src}
-									alt="background"
-									className="absolute inset-x-0 top-56 -z-20 hidden lg:top-32 dark:block"
-									width="3276"
-									height="4095"
-								/>
-								<img
-									src={heroImageLight.src}
-									alt="background"
-									className="absolute inset-x-0 top-56 -z-20 block lg:top-32 dark:hidden"
-									width="3276"
-									height="4095"
-								/>
-							</AnimatedGroup>
 							<div
 								aria-hidden
 								className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--background)_75%)]"
@@ -175,7 +136,7 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 								<div className="mb-10 lg:mb-12">
 									<AnimatedGroup variants={transitionVariants}>
 										<a
-											href="https://github.com/theopenco/llmgateway"
+											href={config.githubUrl ?? ""}
 											target="_blank"
 											className="mx-auto lg:mx-0 hover:bg-background dark:hover:border-t-border bg-muted group flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 dark:border-t-white/5 dark:shadow-zinc-950"
 										>
@@ -293,7 +254,7 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 														code={typescriptExample.code}
 														language={typescriptExample.language as Language}
 														theme={
-															resolvedTheme === "dark"
+															mounted && resolvedTheme === "dark"
 																? themes.dracula
 																: themes.github
 														}
@@ -306,7 +267,7 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 															getTokenProps,
 														}: {
 															className: string;
-															style: React.CSSProperties;
+															style: CSSProperties;
 															tokens: any[];
 															getLineProps: (props: any) => any;
 															getTokenProps: (props: any) => any;
@@ -358,37 +319,6 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 										</AnimatedGroup>
 									</div>
 								</div>
-
-								{/* Product Hunt Badge - Keep in fixed position */}
-								<AnimatedGroup
-									variants={{
-										container: {
-											visible: {
-												transition: {
-													staggerChildren: 0.05,
-													delayChildren: 1,
-												},
-											},
-										},
-										...transitionVariants,
-									}}
-									className="mt-8 flex justify-center fixed bottom-4 left-2 z-30"
-								>
-									<a
-										href="https://www.producthunt.com/products/llm-gateway?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-llm&#0045;gateway"
-										target="_blank"
-										rel="noopener noreferrer"
-										className="transition-transform hover:scale-105"
-									>
-										<img
-											src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=986038&theme=light&t=1751353042660"
-											alt="LLM&#0032;Gateway - One&#0032;API&#0032;Gateway&#0032;for&#0032;all&#0032;your&#0032;LLM&#0032;needs | Product Hunt"
-											style={{ width: "250px", height: "54px" }}
-											width="250"
-											height="54"
-										/>
-									</a>
-								</AnimatedGroup>
 							</div>
 
 							<AnimatedGroup
@@ -410,19 +340,19 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 										className="bg-gradient-to-b to-background absolute inset-0 z-10 from-transparent from-35%"
 									/>
 									<div className="inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-background relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-4 shadow-lg shadow-zinc-950/15 ring-1">
-										<img
+										<Image
 											className="bg-background aspect-15/8 relative hidden rounded-2xl dark:block"
-											src={heroImageDark.src}
+											src={heroImageDark}
 											alt="app screen"
-											width="2696"
-											height="1386"
+											width={2696}
+											height={1386}
 										/>
-										<img
+										<Image
 											className="z-2 border-border/25 aspect-15/8 relative rounded-2xl border dark:hidden"
-											src={heroImageLight.src}
+											src={heroImageLight}
 											alt="app screen"
-											width="2696"
-											height="1386"
+											width={2696}
+											height={1386}
 										/>
 									</div>
 								</div>
@@ -442,13 +372,25 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 							</div>
 							<div className="group-hover:blur-xs mx-auto mt-12 grid max-w-2xl grid-cols-5 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 sm:gap-x-16 sm:gap-y-14">
 								{PROVIDER_LOGOS.map((provider) => {
+									const logoUrl = providerLogoUrls[provider.providerId];
+									const darkModeClasses = getProviderLogoDarkModeClasses(
+										provider.providerId,
+									);
+
 									return (
 										<div key={provider.name} className="flex">
-											<img
-												src={provider.src}
-												alt={provider.name}
-												className="mx-auto h-16 w-fit object-contain"
-											/>
+											{logoUrl && (
+												<Image
+													src={logoUrl}
+													alt={provider.name}
+													className={cn(
+														"mx-auto h-16 w-fit object-contain",
+														darkModeClasses,
+													)}
+													width={64}
+													height={64}
+												/>
+											)}
 										</div>
 									);
 								})}

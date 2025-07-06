@@ -42,10 +42,8 @@ export default function PlaygroundPage() {
 	// Chat API hooks
 	const createChat = useCreateChat();
 	const addMessage = useAddMessage();
-	const { data: currentChatData, isLoading: _isChatLoading } = useChat(
-		currentChatId || "",
-	);
-	const { data: _chatsData } = useChats();
+	const { data: currentChatData } = useChat(currentChatId || "");
+	useChats();
 	const { data: subscriptionStatus, isLoading: isSubscriptionLoading } =
 		api.useQuery("get", "/subscriptions/status", {});
 	const { data: orgsData, isLoading: isOrgsLoading } = api.useQuery(
@@ -66,14 +64,12 @@ export default function PlaygroundPage() {
 
 	useEffect(() => {
 		if (currentChatData?.messages) {
-			const chatMessages: Message[] = currentChatData.messages.map(
-				(msg: any) => ({
-					id: msg.id,
-					role: msg.role,
-					content: msg.content,
-					timestamp: new Date(msg.createdAt),
-				}),
-			);
+			const chatMessages: Message[] = currentChatData.messages.map((msg) => ({
+				id: msg.id,
+				role: msg.role,
+				content: msg.content,
+				timestamp: new Date(msg.createdAt),
+			}));
 			setMessages(chatMessages);
 		}
 	}, [currentChatData]);
@@ -111,7 +107,7 @@ export default function PlaygroundPage() {
 			const newChatId = chatData.chat.id;
 			setCurrentChatId(newChatId);
 			return newChatId;
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Failed to create chat:", error);
 			setError("Failed to create a new chat. Please try again.");
 			throw error;
@@ -238,7 +234,7 @@ export default function PlaygroundPage() {
 												),
 											);
 										}
-									} catch (e) {
+									} catch {
 										console.warn("Failed to parse streaming data:", data);
 									}
 								}
@@ -255,9 +251,9 @@ export default function PlaygroundPage() {
 			}
 
 			setError(null);
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Error sending message:", error);
-			if (!error.message.includes("HTTP")) {
+			if (error instanceof Error && !error.message.includes("HTTP")) {
 				setError("Failed to send message. Please try again.");
 			}
 		} finally {
