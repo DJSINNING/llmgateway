@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+
 import { RecentLogs } from "@/components/activity/recent-logs";
 import { ActivityChart } from "@/components/dashboard/activity-chart";
 import {
@@ -9,6 +12,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/lib/components/card";
+import type { ActivitT } from "@/types/activity";
 
 type LogsData = {
 	message?: string;
@@ -65,13 +69,26 @@ type LogsData = {
 
 interface ActivityClientProps {
 	initialLogsData?: unknown;
-	initialActivityData?: unknown;
+	initialActivityData?: ActivitT;
 }
 
 export function ActivityClient({
 	initialLogsData,
 	initialActivityData,
 }: ActivityClientProps) {
+	const router = useRouter();
+	const searchParams = useSearchParams();
+
+	const daysParam = searchParams.get("days");
+
+	useEffect(() => {
+		if (!daysParam) {
+			const params = new URLSearchParams(searchParams.toString());
+			params.set("days", "7");
+			router.replace(`/dashboard/activity?${params.toString()}`);
+		}
+	}, [daysParam, searchParams, router]);
+
 	return (
 		<div className="flex flex-col">
 			<div className="flex-1 space-y-4 p-4 pt-6 md:p-8">

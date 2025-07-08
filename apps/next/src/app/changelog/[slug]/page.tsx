@@ -7,19 +7,18 @@ import Markdown from "markdown-to-jsx";
 import { AppHeader } from "@/components/changelog/app-header";
 import Footer from "@/components/landing/footer";
 import { getMarkdownOptions } from "@/lib/utils/markdown";
+import Image from "next/image";
 
 interface ChangelogEntryPageProps {
-	params: {
-		slug: string;
-	};
+	params: Promise<{ slug: string }>;
 }
 
 export default async function ChangelogEntryPage({
 	params,
 }: ChangelogEntryPageProps) {
-	const entry = allChangelogs.find(
-		(entry: Changelog) => entry.slug === params.slug,
-	);
+	const { slug } = await params;
+
+	const entry = allChangelogs.find((entry: Changelog) => entry.slug === slug);
 
 	if (!entry) {
 		notFound();
@@ -57,12 +56,12 @@ export default async function ChangelogEntryPage({
 
 						{entry.image && (
 							<div className="mb-8">
-								<img
+								<Image
 									src={entry.image.src}
 									alt={entry.image.alt || entry.title}
 									width={entry.image.width}
 									height={entry.image.height}
-									className="w-full rounded-lg"
+									className="w-full rounded-lg object-cover"
 								/>
 							</div>
 						)}
@@ -83,9 +82,9 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: ChangelogEntryPageProps) {
-	const entry = allChangelogs.find(
-		(entry: Changelog) => entry.slug === params.slug,
-	);
+	const { slug } = await params;
+
+	const entry = allChangelogs.find((entry: Changelog) => entry.slug === slug);
 
 	if (!entry) {
 		return {};

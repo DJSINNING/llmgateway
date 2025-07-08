@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 
 import { useUser } from "@/hooks/useUser";
 import { useApi } from "@/lib/fetch-client";
@@ -95,7 +95,7 @@ export function useDashboardState({
 			params.set("orgId", organizations[0].id);
 			router.replace(`${pathname}?${params.toString()}`);
 		}
-	}, [organizations, orgId, searchParams, pathname, router]);
+	}, [organizations, orgId, pathname, router]);
 
 	// Auto-select first project if none selected
 	useEffect(() => {
@@ -110,53 +110,58 @@ export function useDashboardState({
 				router.replace(`${pathname}?${params.toString()}`);
 			}
 		}
-	}, [
-		projects,
-		projectId,
-		selectedOrganization,
-		searchParams,
-		pathname,
-		router,
-	]);
+	}, [projects, projectId, selectedOrganization, pathname, router]);
 
 	useEffect(() => {
 		posthog.capture("page_viewed_dashboard");
 	}, [posthog]);
 
 	// URL update functions
-	const handleOrganizationCreated = (org: Organization) => {
-		const params = new URLSearchParams(searchParams.toString());
-		params.set("orgId", org.id);
-		params.delete("projectId"); // Clear project when switching organizations
-		router.replace(`${pathname}?${params.toString()}`);
-	};
-
-	const handleProjectCreated = (project: Project) => {
-		const params = new URLSearchParams(searchParams.toString());
-		params.set("projectId", project.id);
-		router.replace(`${pathname}?${params.toString()}`);
-	};
-
-	const handleOrganizationSelect = (org: Organization | null) => {
-		const params = new URLSearchParams(searchParams.toString());
-		if (org?.id) {
+	const handleOrganizationCreated = useCallback(
+		(org: Organization) => {
+			const params = new URLSearchParams(searchParams.toString());
 			params.set("orgId", org.id);
-		} else {
-			params.delete("orgId");
-		}
-		params.delete("projectId"); // Clear project when switching organizations
-		router.replace(`${pathname}?${params.toString()}`);
-	};
+			params.delete("projectId"); // Clear project when switching organizations
+			router.replace(`${pathname}?${params.toString()}`);
+		},
+		[searchParams, pathname, router],
+	);
 
-	const handleProjectSelect = (project: Project | null) => {
-		const params = new URLSearchParams(searchParams.toString());
-		if (project?.id) {
+	const handleProjectCreated = useCallback(
+		(project: Project) => {
+			const params = new URLSearchParams(searchParams.toString());
 			params.set("projectId", project.id);
-		} else {
-			params.delete("projectId");
-		}
-		router.replace(`${pathname}?${params.toString()}`);
-	};
+			router.replace(`${pathname}?${params.toString()}`);
+		},
+		[searchParams, pathname, router],
+	);
+
+	const handleOrganizationSelect = useCallback(
+		(org: Organization | null) => {
+			const params = new URLSearchParams(searchParams.toString());
+			if (org?.id) {
+				params.set("orgId", org.id);
+			} else {
+				params.delete("orgId");
+			}
+			params.delete("projectId"); // Clear project when switching organizations
+			router.replace(`${pathname}?${params.toString()}`);
+		},
+		[searchParams, pathname, router],
+	);
+
+	const handleProjectSelect = useCallback(
+		(project: Project | null) => {
+			const params = new URLSearchParams(searchParams.toString());
+			if (project?.id) {
+				params.set("projectId", project.id);
+			} else {
+				params.delete("projectId");
+			}
+			router.replace(`${pathname}?${params.toString()}`);
+		},
+		[searchParams, pathname, router],
+	);
 
 	return {
 		selectedOrganization,

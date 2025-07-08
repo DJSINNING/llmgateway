@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 import { TopUpCreditsButton } from "@/components/credits/top-up-credits-dialog";
 import { UpgradeToProDialog } from "@/components/shared/upgrade-to-pro-dialog";
@@ -25,6 +26,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/lib/components/tabs";
 import { useDashboardState } from "@/lib/dashboard-state";
 import { useApi } from "@/lib/fetch-client";
+import { preserveOrgAndProjectParams } from "@/lib/navigation-utils";
 import { cn } from "@/lib/utils";
 import type { ActivitT } from "@/types/activity";
 import { Overview } from "@/components/dashboard/overview";
@@ -41,23 +43,35 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 	const daysParam = searchParams.get("days");
 	const days = (daysParam === "30" ? 30 : 7) as 7 | 30;
 
+	// If no days param exists, add it to the URL immediately
+	useEffect(() => {
+		if (!daysParam) {
+			const params = new URLSearchParams(searchParams.toString());
+			params.set("days", "7");
+			router.replace(`/dashboard?${params.toString()}`);
+		}
+	}, [daysParam, searchParams, router]);
+
 	const { selectedOrganization, selectedProject } = useDashboardState();
 	const api = useApi();
 
-	const { data, isLoading } = api.useQuery(
+	const { data, isLoading, error } = api.useQuery(
 		"get",
 		"/activity",
 		{
 			params: {
 				query: {
 					days: String(days),
-					projectId: selectedProject?.id || "",
+					...(selectedProject?.id ? { projectId: selectedProject.id } : {}),
 				},
 			},
 		},
 		{
 			enabled: !!selectedProject?.id,
-			initialData: initialActivityData,
+			// Only use initialData if days param is present (not defaulting)
+			initialData: daysParam ? initialActivityData : undefined,
+			refetchOnWindowFocus: false,
+			staleTime: 1000 * 60 * 5, // 5 minutes
 		},
 	);
 
@@ -69,6 +83,12 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 	};
 
 	const activityData = data?.activity || [];
+
+	// Show error state if API query failed
+	if (error) {
+		console.error("Failed to fetch activity data:", error);
+	}
+
 	const totalRequests =
 		activityData.reduce((sum, day) => sum + day.requestCount, 0) || 0;
 	const totalTokens =
@@ -90,11 +110,6 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 		}
 		return tokens.toString();
 	};
-
-	const hasActivity =
-		activityData.length > 0 &&
-		totalRequests > 0 &&
-		selectedOrganization?.credits;
 
 	const isOrganizationLoading = !selectedOrganization;
 
@@ -155,33 +170,32 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 							</p>
 						)}
 					</div>
-					{hasActivity && (
-						<div className="flex items-center space-x-2">
-							{selectedOrganization && <TopUpCreditsButton />}
-							<Button asChild>
-								<Link href="/dashboard/provider-keys">
-									<Plus className="mr-2 h-4 w-4" />
-									Add Provider
-								</Link>
-							</Button>
-						</div>
-					)}
+					<div className="flex items-center space-x-2">
+						{selectedOrganization && <TopUpCreditsButton />}
+						<Button asChild>
+							<Link
+								href={preserveOrgAndProjectParams(
+									"/dashboard/provider-keys",
+									searchParams,
+								)}
+							>
+								<Plus className="mr-2 h-4 w-4" />
+								Add Provider
+							</Link>
+						</Button>
+					</div>
 				</div>
 
-				{hasActivity && (
-					<Tabs
-						value={days === 7 ? "7days" : "30days"}
-						onValueChange={(value) =>
-							updateDaysInUrl(value === "7days" ? 7 : 30)
-						}
-						className="mb-2"
-					>
-						<TabsList>
-							<TabsTrigger value="7days">Last 7 Days</TabsTrigger>
-							<TabsTrigger value="30days">Last 30 Days</TabsTrigger>
-						</TabsList>
-					</Tabs>
-				)}
+				<Tabs
+					value={days === 7 ? "7days" : "30days"}
+					onValueChange={(value) => updateDaysInUrl(value === "7days" ? 7 : 30)}
+					className="mb-2"
+				>
+					<TabsList>
+						<TabsTrigger value="7days">Last 7 Days</TabsTrigger>
+						<TabsTrigger value="30days">Last 30 Days</TabsTrigger>
+					</TabsList>
+				</Tabs>
 
 				<div className="space-y-4">
 					{shouldShowGetStartedState && (

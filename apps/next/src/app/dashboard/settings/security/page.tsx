@@ -1,74 +1,65 @@
 "use client";
 
 import { useState } from "react";
+
+import { createAddPasskeyFunction } from "@/components/passkeys/add-passkey";
+import { PasskeyList } from "@/components/passkeys/passkey-list";
+import { useUpdatePassword } from "@/hooks/useUser";
+import { useAuthClient } from "@/lib/auth-client";
 import { Button } from "@/lib/components/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from "@/lib/components/card";
-import { Switch } from "@/lib/components/switch";
+import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
-import { useToast } from "@/lib/components/use-toast";
+import { Separator } from "@/lib/components/separator";
+import { toast } from "@/lib/components/use-toast";
 
 export default function SecurityPage() {
-	const { toast } = useToast();
-	const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-	const [emailNotifications, setEmailNotifications] = useState(true);
-	const [loginNotifications, setLoginNotifications] = useState(true);
+	const [currentPassword, setCurrentPassword] = useState("");
+	const [newPassword, setNewPassword] = useState("");
+	const [confirmPassword, setConfirmPassword] = useState("");
+	const authClient = useAuthClient();
+	const addPasskey = createAddPasskeyFunction(authClient);
 
-	const handleTwoFactorToggle = async (enabled: boolean) => {
-		try {
-			// TODO: Implement 2FA toggle
-			setTwoFactorEnabled(enabled);
-			toast({
-				title: enabled ? "2FA Enabled" : "2FA Disabled",
-				description: enabled
-					? "Two-factor authentication has been enabled."
-					: "Two-factor authentication has been disabled.",
-			});
-		} catch (error) {
+	const updatePasswordMutation = useUpdatePassword();
+
+	const handleUpdatePassword = async () => {
+		if (newPassword !== confirmPassword) {
 			toast({
 				title: "Error",
-				description: "Failed to update 2FA settings. Please try again.",
+				description: "New passwords do not match",
 				variant: "destructive",
 			});
+			return;
 		}
-	};
 
-	const handleEmailNotificationsToggle = async (enabled: boolean) => {
 		try {
-			// TODO: Implement email notifications toggle
-			setEmailNotifications(enabled);
+			await updatePasswordMutation.mutateAsync({
+				body: {
+					currentPassword,
+					newPassword,
+				},
+			});
+
+			setCurrentPassword("");
+			setNewPassword("");
+			setConfirmPassword("");
+
 			toast({
-				title: "Settings Updated",
-				description: "Email notification settings have been updated.",
+				title: "Success",
+				description: "Your password has been updated.",
 			});
 		} catch (error) {
 			toast({
 				title: "Error",
 				description:
-					"Failed to update notification settings. Please try again.",
-				variant: "destructive",
-			});
-		}
-	};
-
-	const handleLoginNotificationsToggle = async (enabled: boolean) => {
-		try {
-			// TODO: Implement login notifications toggle
-			setLoginNotifications(enabled);
-			toast({
-				title: "Settings Updated",
-				description: "Login notification settings have been updated.",
-			});
-		} catch (error) {
-			toast({
-				title: "Error",
-				description:
-					"Failed to update notification settings. Please try again.",
+					error instanceof Error ? error.message : "An error occurred",
 				variant: "destructive",
 			});
 		}
@@ -80,90 +71,73 @@ export default function SecurityPage() {
 				<div className="flex items-center justify-between">
 					<h2 className="text-3xl font-bold tracking-tight">Security</h2>
 				</div>
-				<div className="space-y-6">
+				<div className="space-y-4">
 					<Card>
 						<CardHeader>
-							<CardTitle>Two-Factor Authentication</CardTitle>
-							<CardDescription>
-								Add an extra layer of security to your account
-							</CardDescription>
+							<CardTitle>Change Password</CardTitle>
+							<CardDescription>Update your password</CardDescription>
 						</CardHeader>
-						<CardContent>
-							<div className="flex items-center space-x-2">
-								<Switch
-									id="two-factor"
-									checked={twoFactorEnabled}
-									onCheckedChange={handleTwoFactorToggle}
+						<CardContent className="space-y-4">
+							<div className="space-y-2">
+								<Label htmlFor="current-password">Current Password</Label>
+								<Input
+									id="current-password"
+									type="password"
+									value={currentPassword}
+									onChange={(e) => setCurrentPassword(e.target.value)}
 								/>
-								<Label htmlFor="two-factor">
-									{twoFactorEnabled ? "Enabled" : "Disabled"}
-								</Label>
 							</div>
-							<p className="text-sm text-muted-foreground mt-2">
-								When enabled, you'll need to enter a code from your
-								authenticator app in addition to your password.
-							</p>
+							<Separator />
+							<div className="space-y-2">
+								<Label htmlFor="new-password">New Password</Label>
+								<Input
+									id="new-password"
+									type="password"
+									value={newPassword}
+									onChange={(e) => setNewPassword(e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="confirm-password">Confirm New Password</Label>
+								<Input
+									id="confirm-password"
+									type="password"
+									value={confirmPassword}
+									onChange={(e) => setConfirmPassword(e.target.value)}
+								/>
+							</div>
 						</CardContent>
+						<CardFooter>
+							<Button
+								onClick={handleUpdatePassword}
+								disabled={updatePasswordMutation.isPending}
+							>
+								{updatePasswordMutation.isPending
+									? "Updating..."
+									: "Update Password"}
+							</Button>
+						</CardFooter>
 					</Card>
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Security Notifications</CardTitle>
+							<CardTitle>Passkeys</CardTitle>
 							<CardDescription>
-								Manage how you receive security-related notifications
+								Manage your passkeys for passwordless login
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
-							<div className="flex items-center space-x-2">
-								<Switch
-									id="email-notifications"
-									checked={emailNotifications}
-									onCheckedChange={handleEmailNotificationsToggle}
-								/>
-								<Label htmlFor="email-notifications">
-									Email notifications for security events
-								</Label>
-							</div>
-							<div className="flex items-center space-x-2">
-								<Switch
-									id="login-notifications"
-									checked={loginNotifications}
-									onCheckedChange={handleLoginNotificationsToggle}
-								/>
-								<Label htmlFor="login-notifications">
-									Email notifications for new logins
-								</Label>
-							</div>
+							<PasskeyList />
 						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>Active Sessions</CardTitle>
-							<CardDescription>
-								Manage your active sessions across devices
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<div className="space-y-4">
-								<div className="flex items-center justify-between">
-									<div>
-										<h4 className="font-medium">Current Session</h4>
-										<p className="text-sm text-muted-foreground">
-											This device - Active now
-										</p>
-									</div>
-									<Button variant="outline" size="sm">
-										Current
-									</Button>
-								</div>
-								<div className="flex items-center justify-between">
-									<div>
-										<Button variant="outline">Revoke All Other Sessions</Button>
-									</div>
-								</div>
-							</div>
-						</CardContent>
+						<CardFooter>
+							<Button
+								onClick={async () => {
+									await addPasskey();
+								}}
+							>
+								Add Passkey
+							</Button>
+						</CardFooter>
 					</Card>
 				</div>
 			</div>

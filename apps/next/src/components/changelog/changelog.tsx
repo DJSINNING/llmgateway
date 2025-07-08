@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AppHeader } from "./app-header";
 import Footer from "@/components/landing/footer";
+import Image from "next/image";
 
 import type { ChangelogFrontmatter } from "@/lib/utils/markdown";
 
@@ -62,12 +63,12 @@ export function ChangelogComponent({ entries }: ChangelogComponentProps = {}) {
 								</div>
 								<div className="bg-card border border-border rounded-lg overflow-hidden">
 									<Link href={`/changelog/${entry.slug}`}>
-										<img
+										<Image
 											src={entry.image.src}
 											alt={entry.image.alt}
 											width={entry.image.width}
 											height={entry.image.height}
-											className="w-full h-64 object-cover hover:opacity-90 transition-opacity"
+											className="w-full h-64 object-cover hover:opacity-90 transition-opacity rounded-lg"
 										/>
 									</Link>
 								</div>

@@ -8,10 +8,7 @@ import {
 import { ExternalLink, Copy, Check, Plus, GitBranch } from "lucide-react";
 import { useState } from "react";
 
-import {
-	providerLogoUrls,
-	getProviderLogoDarkModeClasses,
-} from "./provider-keys/provider-logo";
+import { providerLogoUrls } from "./provider-keys/provider-logo";
 import { Button } from "@/lib/components/button";
 import {
 	Card,
@@ -21,8 +18,8 @@ import {
 	CardTitle,
 } from "@/lib/components/card";
 import { useAppConfig } from "@/lib/config";
-import Logo from "@/lib/icons/Logo";
 import { cn, formatContextSize } from "@/lib/utils";
+import { getProviderIcon } from "@/components/ui/providers-icons";
 
 interface ProviderModel {
 	model: string;
@@ -34,20 +31,19 @@ interface ProviderModel {
 	contextSize?: number;
 }
 
-const getProviderIcon = (providerId: ProviderId) => {
-	const logoUrl = providerLogoUrls[providerId];
+const getProviderLogo = (providerId: ProviderId) => {
+	const LogoComponent = providerLogoUrls[providerId];
 
-	if (logoUrl) {
-		return (
-			<img
-				src={logoUrl}
-				alt={`${providerId} logo`}
-				className={`h-10 w-10 object-contain ${getProviderLogoDarkModeClasses(providerId)}`}
-			/>
-		);
+	if (LogoComponent) {
+		return <LogoComponent className="h-10 w-10 object-contain" />;
 	}
 
-	return <Logo className="h-5 w-5" />;
+	const IconComponent = getProviderIcon(providerId);
+	return IconComponent ? (
+		<IconComponent className="h-10 w-10" />
+	) : (
+		<div className="h-10 w-10 bg-gray-200 rounded" />
+	);
 };
 
 const groupedProviders = modelDefinitions.reduce<
@@ -197,7 +193,7 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 									href={`/providers/${providerId}`}
 									className="flex items-center gap-3 hover:opacity-80 transition-opacity"
 								>
-									{getProviderIcon(providerId)}
+									{getProviderLogo(providerId)}
 									<h2 className="text-2xl font-semibold">{providerName}</h2>
 									<span className="text-sm text-muted-foreground">
 										{models.length} model{models.length !== 1 && "s"}

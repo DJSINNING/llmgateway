@@ -1,14 +1,11 @@
 "use client";
 
-import { providers, type ProviderId } from "@llmgateway/models";
+import { providers } from "@llmgateway/models";
 import { useQueryClient } from "@tanstack/react-query";
 import { KeyIcon, MoreHorizontal } from "lucide-react";
 
 import { CreateProviderKeyDialog } from "./create-provider-key-dialog";
-import {
-	providerLogoUrls,
-	getProviderLogoDarkModeClasses,
-} from "@/components/provider-keys/provider-logo";
+import { ProviderIcons } from "@/components/ui/providers-icons";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -37,7 +34,18 @@ import type { Organization } from "@/lib/types";
 
 interface ProviderKeysListProps {
 	selectedOrganization: Organization | null;
-	initialData?: any;
+	initialData?: {
+		providerKeys: {
+			id: string;
+			createdAt: string;
+			updatedAt: string;
+			provider: string;
+			baseUrl: string | null;
+			status: "active" | "inactive" | "deleted" | null;
+			organizationId: string;
+			maskedToken: string;
+		}[];
+	};
 }
 
 export function ProviderKeysList({
@@ -47,18 +55,20 @@ export function ProviderKeysList({
 	const queryClient = useQueryClient();
 	const api = useApi();
 
-	const { data } = api.useSuspenseQuery(
+	const queryKey = api.queryOptions("get", "/keys/provider").queryKey;
+
+	const { data } = api.useQuery(
 		"get",
 		"/keys/provider",
 		{},
 		{
 			initialData,
+			staleTime: 5 * 60 * 1000, // 5 minutes
+			refetchOnWindowFocus: false,
 		},
 	);
 	const deleteMutation = api.useMutation("delete", "/keys/provider/{id}");
 	const toggleMutation = api.useMutation("patch", "/keys/provider/{id}");
-
-	const queryKey = api.queryOptions("get", "/keys/provider").queryKey;
 
 	if (!selectedOrganization) {
 		return (
@@ -95,7 +105,7 @@ export function ProviderKeysList({
 			{
 				onSuccess: () => {
 					toast({ title: "Deleted", description: "Provider key removed" });
-					void queryClient.invalidateQueries({ queryKey });
+					queryClient.invalidateQueries({ queryKey });
 				},
 				onError: () =>
 					toast({
@@ -148,7 +158,8 @@ export function ProviderKeysList({
 
 			<div className="space-y-2">
 				{availableProviders.map((provider) => {
-					const logoUrl = providerLogoUrls[provider.id as ProviderId];
+					const LogoComponent =
+						ProviderIcons[provider.id as keyof typeof ProviderIcons];
 					const existingKey = existingKeysMap.get(provider.id);
 					const hasKey = !!existingKey;
 
@@ -159,12 +170,8 @@ export function ProviderKeysList({
 						>
 							<div className="flex items-center gap-3">
 								<div className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border">
-									{logoUrl ? (
-										<img
-											src={logoUrl}
-											alt={provider.name}
-											className={`h-6 w-6 object-contain ${getProviderLogoDarkModeClasses(provider.id as ProviderId)}`}
-										/>
+									{LogoComponent ? (
+										<LogoComponent className="h-6 w-6" />
 									) : (
 										<div className="w-6 h-6 bg-muted rounded" />
 									)}
@@ -250,6 +257,7 @@ export function ProviderKeysList({
 									<CreateProviderKeyDialog
 										selectedOrganization={selectedOrganization}
 										preselectedProvider={provider.id}
+										existingProviderKeys={data?.providerKeys || []}
 									>
 										<Button variant="outline" size="sm">
 											Add

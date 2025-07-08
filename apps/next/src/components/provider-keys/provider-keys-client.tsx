@@ -1,10 +1,8 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { Suspense } from "react";
 
 import { CreateProviderKeyDialog } from "@/components/provider-keys/create-provider-key-dialog";
-import LoadingProviderKeys from "@/components/provider-keys/loading-provider-keys";
 import { ProviderKeysList } from "@/components/provider-keys/provider-keys-list";
 import { Button } from "@/lib/components/button";
 import {
@@ -17,7 +15,18 @@ import {
 import { useDashboardState } from "@/lib/dashboard-state";
 
 interface ProviderKeysClientProps {
-	initialProviderKeysData?: any;
+	initialProviderKeysData?: {
+		providerKeys: {
+			id: string;
+			createdAt: string;
+			updatedAt: string;
+			provider: string;
+			baseUrl: string | null;
+			status: "active" | "inactive" | "deleted" | null;
+			organizationId: string;
+			maskedToken: string;
+		}[];
+	};
 }
 
 export function ProviderKeysClient({
@@ -33,6 +42,7 @@ export function ProviderKeysClient({
 					{selectedOrganization && (
 						<CreateProviderKeyDialog
 							selectedOrganization={selectedOrganization}
+							existingProviderKeys={initialProviderKeysData?.providerKeys || []}
 						>
 							<Button>
 								<Plus className="mr-2 h-4 w-4" />
@@ -55,12 +65,10 @@ export function ProviderKeysClient({
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<Suspense fallback={<LoadingProviderKeys />}>
-								<ProviderKeysList
-									selectedOrganization={selectedOrganization}
-									initialData={initialProviderKeysData}
-								/>
-							</Suspense>
+							<ProviderKeysList
+								selectedOrganization={selectedOrganization}
+								initialData={initialProviderKeysData}
+							/>
 						</CardContent>
 					</Card>
 				</div>

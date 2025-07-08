@@ -1,6 +1,6 @@
 "use client";
 import { addDays, format, parseISO, subDays } from "date-fns";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
 	Bar,
 	BarChart,
@@ -11,13 +11,21 @@ import {
 	YAxis,
 } from "recharts";
 
-import { Button } from "@/lib/components/button";
 import { useDashboardState } from "@/lib/dashboard-state";
 import { useApi } from "@/lib/fetch-client";
+import type { ActivitT } from "@/types/activity";
 
-export function UsageChart() {
-	const [days, setDays] = useState<7 | 30>(7);
+interface UsageChartProps {
+	initialData?: ActivitT;
+}
+
+export function UsageChart({ initialData }: UsageChartProps) {
+	const searchParams = useSearchParams();
 	const { selectedProject } = useDashboardState();
+
+	// Get days from URL parameter
+	const daysParam = searchParams.get("days");
+	const days = daysParam === "30" ? 30 : 7;
 
 	const api = useApi();
 	const { data, isLoading, error } = api.useQuery(
@@ -33,6 +41,7 @@ export function UsageChart() {
 		},
 		{
 			enabled: !!selectedProject?.id,
+			initialData: daysParam ? initialData : undefined,
 		},
 	);
 
@@ -106,22 +115,6 @@ export function UsageChart() {
 
 	return (
 		<div className="flex flex-col">
-			<div className="flex items-center justify-end space-x-2 mb-4">
-				<Button
-					variant={days === 7 ? "default" : "outline"}
-					size="sm"
-					onClick={() => setDays(7)}
-				>
-					7 Days
-				</Button>
-				<Button
-					variant={days === 30 ? "default" : "outline"}
-					size="sm"
-					onClick={() => setDays(30)}
-				>
-					30 Days
-				</Button>
-			</div>
 			<ResponsiveContainer width="100%" height={350}>
 				<BarChart
 					data={chartData}

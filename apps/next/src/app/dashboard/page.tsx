@@ -2,6 +2,9 @@ import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { fetchServerData } from "@/lib/server-api";
 import type { ActivitT } from "@/types/activity";
 
+// Force dynamic rendering since this page uses server-side data fetching with cookies
+export const dynamic = "force-dynamic";
+
 export default async function Dashboard({
 	searchParams,
 }: {
@@ -10,34 +13,24 @@ export default async function Dashboard({
 		days?: string;
 	}>;
 }) {
-	// Safely handle searchParams
-	let projectId: string | undefined;
-	let days: string | undefined;
-	try {
-		const params = searchParams ? await searchParams : {};
-		projectId = params?.projectId;
-		days = params?.days;
-	} catch (error) {
-		console.warn("Failed to parse searchParams:", error);
-		projectId = undefined;
-		days = undefined;
-	}
+	const params = searchParams ? await searchParams : {};
+	const projectId = params?.projectId;
+	const days = params?.days;
 
-	// Parse days parameter, default to 7 if not provided or invalid
+	// Default to "7" days, only use "30" if explicitly specified
 	const daysParam = days === "30" ? "30" : "7";
 
-	const initialActivityData = await fetchServerData<ActivitT>(
-		"GET",
-		"/activity",
-		{
-			params: {
-				query: {
-					days: daysParam,
-					projectId,
+	// Only fetch if we have a projectId, otherwise let client-side handle it
+	const initialActivityData = projectId
+		? await fetchServerData<ActivitT>("GET", "/activity", {
+				params: {
+					query: {
+						days: daysParam,
+						projectId,
+					},
 				},
-			},
-		},
-	);
+			})
+		: null;
 
 	return (
 		<DashboardClient initialActivityData={initialActivityData || undefined} />

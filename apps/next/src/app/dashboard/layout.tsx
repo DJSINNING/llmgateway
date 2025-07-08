@@ -6,6 +6,9 @@ import { SidebarProvider } from "@/lib/components/sidebar";
 import { fetchServerData } from "@/lib/server-api";
 import type { User } from "@/lib/types";
 
+// Force dynamic rendering since this layout uses cookies for authentication
+export const dynamic = "force-dynamic";
+
 interface DashboardLayoutProps {
 	children: ReactNode;
 	searchParams?: Promise<{

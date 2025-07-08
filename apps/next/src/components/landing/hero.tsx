@@ -60,6 +60,7 @@ const PROVIDER_LOGOS: { name: string; providerId: ProviderId }[] = [
 	{ name: "xAI", providerId: "xai" },
 	{ name: "DeepSeek", providerId: "deepseek" },
 	{ name: "Perplexity", providerId: "perplexity" },
+	{ name: "Ai Studio", providerId: "google-ai-studio" },
 ];
 
 // TypeScript code example
@@ -372,23 +373,17 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 							</div>
 							<div className="group-hover:blur-xs mx-auto mt-12 grid max-w-2xl grid-cols-5 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 sm:gap-x-16 sm:gap-y-14">
 								{PROVIDER_LOGOS.map((provider) => {
-									const logoUrl = providerLogoUrls[provider.providerId];
-									const darkModeClasses = getProviderLogoDarkModeClasses(
-										provider.providerId,
-									);
+									const LogoComponent = providerLogoUrls[provider.providerId];
+									const darkModeClasses = getProviderLogoDarkModeClasses();
 
 									return (
 										<div key={provider.name} className="flex">
-											{logoUrl && (
-												<Image
-													src={logoUrl}
-													alt={provider.name}
+											{LogoComponent && (
+												<LogoComponent
 													className={cn(
 														"mx-auto h-16 w-fit object-contain",
 														darkModeClasses,
 													)}
-													width={64}
-													height={64}
 												/>
 											)}
 										</div>

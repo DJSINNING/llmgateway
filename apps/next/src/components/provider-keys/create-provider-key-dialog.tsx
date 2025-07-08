@@ -30,12 +30,23 @@ interface CreateProviderKeyDialogProps {
 	children: React.ReactNode;
 	selectedOrganization: Organization;
 	preselectedProvider?: string;
+	existingProviderKeys?: {
+		id: string;
+		createdAt: string;
+		updatedAt: string;
+		provider: string;
+		baseUrl: string | null;
+		status: "active" | "inactive" | "deleted" | null;
+		organizationId: string;
+		maskedToken: string;
+	}[];
 }
 
 export function CreateProviderKeyDialog({
 	children,
 	selectedOrganization,
 	preselectedProvider,
+	existingProviderKeys = [],
 }: CreateProviderKeyDialogProps) {
 	const config = useAppConfig();
 	const posthog = usePostHog();
@@ -51,20 +62,14 @@ export function CreateProviderKeyDialog({
 	const queryKey = api.queryOptions("get", "/keys/provider").queryKey;
 	const queryClient = useQueryClient();
 
-	const { data: providerKeysData, isPending: isLoading } = api.useSuspenseQuery(
-		"get",
-		"/keys/provider",
-	);
-
 	const isProPlan = selectedOrganization.plan === "pro";
 
 	const createMutation = api.useMutation("post", "/keys/provider");
 
 	// Filter provider keys by selected organization
-	const organizationProviderKeys =
-		providerKeysData?.providerKeys.filter(
-			(key) => key.organizationId === selectedOrganization.id,
-		) || [];
+	const organizationProviderKeys = existingProviderKeys.filter(
+		(key) => key.organizationId === selectedOrganization.id,
+	);
 
 	const availableProviders = providers.filter((provider) => {
 		if (provider.id === "llmgateway") {
@@ -77,7 +82,7 @@ export function CreateProviderKeyDialog({
 		}
 
 		const existingKey = organizationProviderKeys.find(
-			(key: any) => key.provider === provider.id && key.status !== "deleted",
+			(key) => key.provider === provider.id && key.status !== "deleted",
 		);
 		return !existingKey;
 	});
@@ -156,11 +161,13 @@ export function CreateProviderKeyDialog({
 					void queryClient.invalidateQueries({ queryKey });
 					setOpen(false);
 				},
-				onError: (error: any) => {
+				onError: (error: unknown) => {
 					setIsValidating(false);
 					toast({
 						title: "Error",
-						description: error?.message ?? "Failed to create key",
+						description:
+							(error as { message?: string })?.message ??
+							"Failed to create key",
 						variant: "destructive",
 					});
 				},
@@ -218,7 +225,7 @@ export function CreateProviderKeyDialog({
 							onValueChange={setSelectedProvider}
 							value={selectedProvider}
 							providers={availableProviders}
-							loading={isLoading}
+							loading={false}
 							disabled={!!preselectedProvider}
 						/>
 					</div>

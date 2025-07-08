@@ -73,7 +73,13 @@ import { cn } from "@/lib/utils";
 
 import type { Organization, User } from "@/lib/types";
 import type { LucideIcon } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import {
+	usePathname,
+	useRouter,
+	useSearchParams,
+	type ReadonlyURLSearchParams,
+} from "next/navigation";
+import { preserveOrgAndProjectParams } from "@/lib/navigation-utils";
 
 // Configuration
 const PROJECT_NAVIGATION = [
@@ -155,16 +161,21 @@ function DashboardSidebarHeader({
 	selectedOrganization,
 	onSelectOrganization,
 	onOrganizationCreated,
+	searchParams,
 }: {
 	organizations: Organization[];
 	selectedOrganization: Organization | null;
 	onSelectOrganization: (org: Organization | null) => void;
 	onOrganizationCreated: (org: Organization) => void;
+	searchParams: ReadonlyURLSearchParams;
 }) {
 	return (
 		<SidebarHeader>
 			<div className="flex h-14 items-center px-4">
-				<Link href="/dashboard" className="inline-flex items-center space-x-2">
+				<Link
+					href={preserveOrgAndProjectParams("/dashboard", searchParams)}
+					className="inline-flex items-center space-x-2"
+				>
 					<Logo className="h-8 w-8 rounded-full text-black dark:text-white" />
 					<span className="text-xl font-bold tracking-tight">LLM Gateway</span>
 				</Link>
@@ -183,15 +194,19 @@ function NavigationItem({
 	item,
 	isActive,
 	onClick,
+	searchParams,
 }: {
 	item: (typeof PROJECT_NAVIGATION)[number];
 	isActive: (path: string) => boolean;
 	onClick: () => void;
+	searchParams: ReadonlyURLSearchParams;
 }) {
+	const href = preserveOrgAndProjectParams(item.href, searchParams);
+
 	return (
 		<SidebarMenuItem>
 			<Link
-				href={item.href}
+				href={href}
 				className={cn(
 					"flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
 					isActive(item.href)
@@ -212,10 +227,12 @@ function ProjectSettingsSection({
 	isActive,
 	isMobile,
 	toggleSidebar,
+	searchParams,
 }: {
 	isActive: (path: string) => boolean;
 	isMobile: boolean;
 	toggleSidebar: () => void;
+	searchParams: ReadonlyURLSearchParams;
 }) {
 	return (
 		<SidebarMenuItem>
@@ -235,7 +252,7 @@ function ProjectSettingsSection({
 					<SidebarMenuSubItem key={item.href}>
 						<SidebarMenuSubButton asChild isActive={isActive(item.href)}>
 							<Link
-								href={item.href}
+								href={preserveOrgAndProjectParams(item.href, searchParams)}
 								onClick={() => {
 									if (isMobile) {
 										toggleSidebar();
@@ -257,10 +274,12 @@ function OrganizationSection({
 	isActive,
 	isMobile,
 	toggleSidebar,
+	searchParams,
 }: {
 	isActive: (path: string) => boolean;
 	isMobile: boolean;
 	toggleSidebar: () => void;
+	searchParams: ReadonlyURLSearchParams;
 }) {
 	return (
 		<SidebarGroup>
@@ -271,7 +290,10 @@ function OrganizationSection({
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<Link
-							href="/dashboard/provider-keys"
+							href={preserveOrgAndProjectParams(
+								"/dashboard/provider-keys",
+								searchParams,
+							)}
 							className={cn(
 								"flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
 								isActive("/dashboard/provider-keys")
@@ -308,7 +330,10 @@ function OrganizationSection({
 								<SidebarMenuSubItem key={item.href}>
 									<SidebarMenuSubButton asChild isActive={isActive(item.href)}>
 										<Link
-											href={item.href}
+											href={preserveOrgAndProjectParams(
+												item.href,
+												searchParams,
+											)}
 											onClick={() => {
 												if (isMobile) {
 													toggleSidebar();
@@ -334,6 +359,7 @@ function ToolsResourcesSection({
 	isActive,
 	isMobile,
 	toggleSidebar,
+	searchParams,
 }: {
 	toolsResources: readonly {
 		href: string;
@@ -344,6 +370,7 @@ function ToolsResourcesSection({
 	isActive: (path: string) => boolean;
 	isMobile: boolean;
 	toggleSidebar: () => void;
+	searchParams: ReadonlyURLSearchParams;
 }) {
 	return (
 		<SidebarGroup>
@@ -356,7 +383,7 @@ function ToolsResourcesSection({
 						<SidebarMenuItem key={item.href}>
 							{item.internal ? (
 								<Link
-									href={item.href}
+									href={preserveOrgAndProjectParams(item.href, searchParams)}
 									className={cn(
 										"flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
 										isActive(item.href)
@@ -626,6 +653,7 @@ export function DashboardSidebar({
 	const config = useAppConfig();
 	const queryClient = useQueryClient();
 	const pathname = usePathname();
+	const searchParams = useSearchParams();
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const { user } = useUser();
 	const { selectedOrganization } = useDashboardState();
@@ -704,6 +732,7 @@ export function DashboardSidebar({
 					selectedOrganization={selectedOrganization}
 					onSelectOrganization={onSelectOrganization}
 					onOrganizationCreated={onOrganizationCreated}
+					searchParams={searchParams}
 				/>
 
 				<SidebarContent className="px-2 py-4">
@@ -720,12 +749,14 @@ export function DashboardSidebar({
 										item={item}
 										isActive={isActive}
 										onClick={handleNavClick}
+										searchParams={searchParams}
 									/>
 								))}
 								<ProjectSettingsSection
 									isActive={isActive}
 									isMobile={isMobile}
 									toggleSidebar={toggleSidebar}
+									searchParams={searchParams}
 								/>
 							</SidebarMenu>
 						</SidebarGroupContent>
@@ -735,6 +766,7 @@ export function DashboardSidebar({
 						isActive={isActive}
 						isMobile={isMobile}
 						toggleSidebar={toggleSidebar}
+						searchParams={searchParams}
 					/>
 
 					<ToolsResourcesSection
@@ -742,6 +774,7 @@ export function DashboardSidebar({
 						isActive={isActive}
 						isMobile={isMobile}
 						toggleSidebar={toggleSidebar}
+						searchParams={searchParams}
 					/>
 				</SidebarContent>
 

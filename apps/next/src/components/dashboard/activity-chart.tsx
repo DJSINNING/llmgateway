@@ -1,5 +1,6 @@
 import { addDays, format, parseISO, subDays } from "date-fns";
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
 	Bar,
 	BarChart,
@@ -29,7 +30,11 @@ import {
 import { useDashboardState } from "@/lib/dashboard-state";
 import { useApi } from "@/lib/fetch-client";
 
-import type { ActivityModelUsage, DailyActivity } from "@/types/activity";
+import type {
+	ActivitT,
+	ActivityModelUsage,
+	DailyActivity,
+} from "@/types/activity";
 import type { TooltipProps } from "recharts";
 
 // Helper function to get all unique models from the data
@@ -171,11 +176,22 @@ const CustomTooltip = ({
 };
 
 interface ActivityChartProps {
-	initialData?: unknown;
+	initialData?: ActivitT;
 }
 
 export function ActivityChart({ initialData }: ActivityChartProps) {
-	const [days, setDays] = useState<7 | 30>(7);
+	const router = useRouter();
+	const searchParams = useSearchParams();
+
+	const daysParam = searchParams.get("days");
+	const days = (daysParam === "30" ? 30 : 7) as 7 | 30;
+
+	const updateDaysInUrl = (newDays: 7 | 30) => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set("days", String(newDays));
+		router.push(`/dashboard/activity?${params.toString()}`);
+	};
+
 	const [breakdownField, setBreakdownField] = useState<
 		"requests" | "cost" | "tokens"
 	>("requests");
@@ -195,36 +211,7 @@ export function ActivityChart({ initialData }: ActivityChartProps) {
 		},
 		{
 			enabled: !!selectedProject?.id,
-			staleTime: 5 * 60 * 1000, // 5 minutes
-			refetchOnWindowFocus: false,
-			initialData: initialData as
-				| {
-						activity: {
-							date: string;
-							requestCount: number;
-							inputTokens: number;
-							outputTokens: number;
-							totalTokens: number;
-							cost: number;
-							inputCost: number;
-							outputCost: number;
-							requestCost: number;
-							errorCount: number;
-							errorRate: number;
-							cacheCount: number;
-							cacheRate: number;
-							modelBreakdown: {
-								model: string;
-								provider: string;
-								requestCount: number;
-								inputTokens: number;
-								outputTokens: number;
-								totalTokens: number;
-								cost: number;
-							}[];
-						}[];
-				  }
-				| undefined,
+			initialData: initialData,
 		},
 	);
 
@@ -285,16 +272,51 @@ export function ActivityChart({ initialData }: ActivityChartProps) {
 	if (!data || data.activity.length === 0) {
 		return (
 			<Card>
-				<CardHeader>
-					<CardTitle>Model Usage Overview</CardTitle>
-					<CardDescription>
-						Stacked model {breakdownField} over the last {days} days
-						{selectedProject && (
-							<span className="block mt-1 text-sm">
-								Project: {selectedProject.name}
-							</span>
-						)}
-					</CardDescription>
+				<CardHeader className="flex flex-col space-y-4 md:flex-row items-center justify-between pb-2">
+					<div>
+						<CardTitle>Model Usage Overview</CardTitle>
+						<CardDescription>
+							Stacked model {breakdownField} over the last {days} days
+							{selectedProject && (
+								<span className="block mt-1 text-sm">
+									Project: {selectedProject.name}
+								</span>
+							)}
+						</CardDescription>
+					</div>
+					<div className="flex items-center space-x-2">
+						<Select
+							value={breakdownField}
+							onValueChange={(value) =>
+								setBreakdownField(value as "requests" | "cost" | "tokens")
+							}
+						>
+							<SelectTrigger className="w-[140px]">
+								<SelectValue placeholder="Select metric" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="requests">Requests</SelectItem>
+								<SelectItem value="cost">Cost</SelectItem>
+								<SelectItem value="tokens">Tokens</SelectItem>
+							</SelectContent>
+						</Select>
+						<div className="flex space-x-2">
+							<Button
+								variant={days === 7 ? "default" : "outline"}
+								size="sm"
+								onClick={() => updateDaysInUrl(7)}
+							>
+								7 Days
+							</Button>
+							<Button
+								variant={days === 30 ? "default" : "outline"}
+								size="sm"
+								onClick={() => updateDaysInUrl(30)}
+							>
+								30 Days
+							</Button>
+						</div>
+					</div>
 				</CardHeader>
 				<CardContent>
 					<div className="flex h-[350px] items-center justify-center">
@@ -396,14 +418,14 @@ export function ActivityChart({ initialData }: ActivityChartProps) {
 						<Button
 							variant={days === 7 ? "default" : "outline"}
 							size="sm"
-							onClick={() => setDays(7)}
+							onClick={() => updateDaysInUrl(7)}
 						>
 							7 Days
 						</Button>
 						<Button
 							variant={days === 30 ? "default" : "outline"}
 							size="sm"
-							onClick={() => setDays(30)}
+							onClick={() => updateDaysInUrl(30)}
 						>
 							30 Days
 						</Button>

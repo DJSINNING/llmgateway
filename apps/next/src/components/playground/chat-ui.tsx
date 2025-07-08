@@ -23,10 +23,15 @@ import { Textarea } from "@/lib/components/textarea";
 import { toast } from "@/lib/components/use-toast";
 import { cn } from "@/lib/utils";
 
-import type { Message } from "@/app/playground/page";
+interface MessageType {
+	id: string;
+	role: "user" | "assistant" | "system";
+	content: string;
+	timestamp: Date;
+}
 
 interface ChatUiProps {
-	messages: Message[];
+	messages: MessageType[];
 	isLoading: boolean;
 	error: string | null;
 	onSendMessage: (content: string) => Promise<void>;

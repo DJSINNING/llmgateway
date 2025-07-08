@@ -5,6 +5,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
+	metadataBase: new URL("https://llmgateway.io"),
 	title: "LLM Gateway",
 	description:
 		"Route, manage, and analyze your LLM requests across multiple providers with a unified API interface.",

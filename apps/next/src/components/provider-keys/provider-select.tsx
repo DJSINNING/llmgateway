@@ -1,8 +1,5 @@
 "use client";
-import {
-	providerLogoUrls,
-	getProviderLogoDarkModeClasses,
-} from "@/components/provider-keys/provider-logo";
+import { providerLogoUrls } from "@/components/provider-keys/provider-logo";
 import {
 	Select,
 	SelectContent,
@@ -49,17 +46,11 @@ export function ProviderSelect({
 					</SelectItem>
 				) : providers.length > 0 ? (
 					providers.map((provider) => {
-						const logoUrl = providerLogoUrls[provider.id as ProviderId];
+						const LogoComponent = providerLogoUrls[provider.id as ProviderId];
 						return (
 							<SelectItem key={provider.id} value={provider.id}>
 								<div className="flex items-center gap-2">
-									{logoUrl && (
-										<img
-											src={logoUrl}
-											alt={provider.name}
-											className={`h-4 w-4 object-contain ${getProviderLogoDarkModeClasses(provider.id as ProviderId)}`}
-										/>
-									)}
+									{LogoComponent && <LogoComponent className="h-4 w-4" />}
 									<span>{provider.name}</span>
 								</div>
 							</SelectItem>

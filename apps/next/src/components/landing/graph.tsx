@@ -5,11 +5,7 @@ import { MonitorSmartphone, HelpCircle, Plus } from "lucide-react";
 import React, { forwardRef, useId, useRef } from "react";
 
 import { AnimatedBeam } from "./animated-beam";
-import AnthropicLogo from "@/assets/models/anthropic.svg";
-import CloudriftLogo from "@/assets/models/cloudrift.svg";
-import GoogleVertexLogo from "@/assets/models/google-vertex-ai.svg";
-import OpenAiLogo from "@/assets/models/openai.svg";
-import XaiLogo from "@/assets/models/xai.svg";
+import { ProviderIcons } from "@/components/ui/providers-icons";
 import { Button } from "@/lib/components/button";
 import {
 	Tooltip,
@@ -53,38 +49,19 @@ export function Graph() {
 		useRef<HTMLDivElement>(null),
 	];
 
+	const OpenAIIcon = ProviderIcons.openai;
+	const AnthropicIcon = ProviderIcons.anthropic;
+	const GoogleVertexIcon = ProviderIcons["google-vertex"];
+	const XAIIcon = ProviderIcons.xai;
+	const CloudriftIcon = ProviderIcons.cloudrift;
+
 	const logos = [
-		<img
-			key={useId()}
-			src={OpenAiLogo}
-			alt="OpenAI"
-			className="w-6 h-6 object-contain"
-		/>,
-		<img
-			key={useId()}
-			src={AnthropicLogo}
-			alt="Anthropic"
-			className="w-6 h-6 object-contain"
-		/>,
-		<img
-			key={useId()}
-			src={GoogleVertexLogo}
-			alt="Google Vertex AI"
-			className="w-6 h-6 object-contain"
-		/>,
-		<img
-			key={useId()}
-			src={XaiLogo}
-			alt="xAI"
-			className="w-6 h-6 object-contain"
-		/>,
+		<OpenAIIcon key={useId()} className="w-6 h-6 object-contain" />,
+		<AnthropicIcon key={useId()} className="w-6 h-6 object-contain" />,
+		<GoogleVertexIcon key={useId()} className="w-6 h-6 object-contain" />,
+		<XAIIcon key={useId()} className="w-6 h-6 object-contain" />,
 		<DotsHorizontalIcon key={useId()} />,
-		<img
-			key={useId()}
-			src={CloudriftLogo}
-			alt="Cloudrift"
-			className="w-6 h-6 object-contain"
-		/>,
+		<CloudriftIcon key={useId()} className="w-6 h-6 object-contain" />,
 	];
 
 	return (

@@ -8,7 +8,6 @@ import Footer from "@/components/landing/footer";
 import { Navbar } from "@/components/landing/navbar";
 import { Hero } from "@/components/providers/hero";
 import { ProductHuntBanner } from "@/components/shared/product-hunt-banner";
-import { Badge } from "@/lib/components/badge";
 import {
 	Card,
 	CardContent,
@@ -19,13 +18,13 @@ import {
 import { formatContextSize } from "@/lib/utils";
 
 interface ProviderPageProps {
-	params: {
-		id: string;
-	};
+	params: Promise<{ id: string }>;
 }
 
 export default async function ProviderPage({ params }: ProviderPageProps) {
-	const provider = providerDefinitions.find((p) => p.id === params.id);
+	const { id } = await params;
+
+	const provider = providerDefinitions.find((p) => p.id === id);
 
 	if (!provider || provider.name === "LLM Gateway") {
 		notFound();
@@ -43,65 +42,69 @@ export default async function ProviderPage({ params }: ProviderPageProps) {
 				<Navbar />
 				<Hero providerId={provider.id} />
 
-				<section className="py-12 bg-gray-50 dark:bg-gray-900">
+				<section className="py-12 bg-background">
 					<div className="container mx-auto px-4">
-						<div className="max-w-4xl mx-auto">
-							<h2 className="text-3xl font-bold mb-8">Available Models</h2>
-							<div className="grid gap-6 md:grid-cols-2">
-								{providerModels.map((model) => (
-									<Card key={model.model}>
-										<CardHeader>
-											<div className="flex items-center justify-between">
-												<CardTitle className="text-lg">{model.model}</CardTitle>
-												<Badge variant="outline">
-													{model.providers[0].providerId}
-												</Badge>
+						<h2 className="text-3xl font-bold mb-8">Available Models</h2>
+						<div className="grid gap-6 md:grid-cols-3">
+							{providerModels.map((model) => (
+								<Card key={model.model}>
+									<CardHeader className="pb-2">
+										<div className="flex items-start justify-between gap-2">
+											<div className="flex-1 min-w-0">
+												<CardTitle className="text-base leading-tight line-clamp-1">
+													{model.model}
+												</CardTitle>
+												<CardDescription className="text-xs">
+													{model.providers[0].modelName}
+												</CardDescription>
 											</div>
-											<CardDescription>{model.model}</CardDescription>
-										</CardHeader>
-										<CardContent>
-											<div className="space-y-2">
-												<div className="flex items-center justify-between text-sm">
-													<span className="text-muted-foreground">
-														Context Size:
-													</span>
-													<span>
-														{formatContextSize(model.providers[0].contextSize)}
-													</span>
-												</div>
-												{model.providers[0].inputPrice && (
-													<div className="flex items-center justify-between text-sm">
-														<span className="text-muted-foreground">
-															Input Price:
-														</span>
-														<span>
-															${model.providers[0].inputPrice}/1M tokens
-														</span>
-													</div>
+										</div>
+									</CardHeader>
+									<CardContent className="mt-auto space-y-2">
+										{model.providers[0].contextSize && (
+											<p className="text-xs text-muted-foreground">
+												Context:{" "}
+												<span className="font-mono text-foreground font-bold">
+													{formatContextSize(model.providers[0].contextSize)}
+												</span>
+											</p>
+										)}
+										{(model.providers[0].inputPrice !== undefined ||
+											model.providers[0].outputPrice !== undefined ||
+											model.providers[0].requestPrice !== undefined) && (
+											<p className="text-xs text-muted-foreground">
+												{model.providers[0].inputPrice !== undefined && (
+													<>
+														<span className="font-mono text-foreground font-bold">
+															$
+															{(model.providers[0].inputPrice * 1e6).toFixed(2)}
+														</span>{" "}
+														<span className="text-muted-foreground">in</span>
+													</>
 												)}
-												{model.providers[0].outputPrice && (
-													<div className="flex items-center justify-between text-sm">
-														<span className="text-muted-foreground">
-															Output Price:
+
+												{model.providers[0].outputPrice !== undefined && (
+													<>
+														<span className="text-muted-foreground mx-2">
+															/
 														</span>
-														<span>
-															${model.providers[0].outputPrice}/1M tokens
-														</span>
-													</div>
+														<span className="font-mono text-foreground font-bold">
+															$
+															{(model.providers[0].outputPrice * 1e6).toFixed(
+																2,
+															)}
+														</span>{" "}
+														<span className="text-muted-foreground">out</span>
+													</>
 												)}
-												<div className="flex items-center justify-between text-sm">
-													<span className="text-muted-foreground">
-														Streaming:
-													</span>
-													<span>
-														{model.providers[0].streaming ? "Yes" : "No"}
-													</span>
-												</div>
-											</div>
-										</CardContent>
-									</Card>
-								))}
-							</div>
+												{model.providers[0].requestPrice !== undefined &&
+													model.providers[0].requestPrice !== 0 &&
+													` / $${(model.providers[0].requestPrice * 1000).toFixed(2)} per 1K req`}
+											</p>
+										)}
+									</CardContent>
+								</Card>
+							))}
 						</div>
 					</div>
 				</section>
@@ -120,7 +123,9 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: ProviderPageProps) {
-	const provider = providerDefinitions.find((p) => p.id === params.id);
+	const { id } = await params;
+
+	const provider = providerDefinitions.find((p) => p.id === id);
 
 	if (!provider || provider.name === "LLM Gateway") {
 		return {};

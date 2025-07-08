@@ -151,7 +151,7 @@ export function HeroCompare({ content }: HeroCompareProps) {
 													</span>
 												</a>
 											) : (
-												<AuthLink>
+												<AuthLink href={heroContent.cta.primary.href}>
 													<span className="text-nowrap">
 														{heroContent.cta.primary.text}
 													</span>

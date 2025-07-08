@@ -1,5 +1,5 @@
 import { models, providers } from "@llmgateway/models";
-import { useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 import { LogCard } from "../dashboard/log-card";
 import {
@@ -94,29 +94,91 @@ export function RecentLogs({ initialData }: RecentLogsProps) {
 	const [model, setModel] = useState<string | undefined>();
 	const { selectedProject } = useDashboardState();
 	const api = useApi();
+	const scrollPositionRef = useRef<number>(0);
+	const isFilteringRef = useRef<boolean>(false);
+
+	// Track scroll position
+	useLayoutEffect(() => {
+		const handleScroll = () => {
+			if (!isFilteringRef.current) {
+				scrollPositionRef.current = window.scrollY;
+			}
+		};
+
+		window.addEventListener("scroll", handleScroll, { passive: true });
+		return () => window.removeEventListener("scroll", handleScroll);
+	}, []);
+
+	// Restore scroll position after filter changes
+	useLayoutEffect(() => {
+		if (isFilteringRef.current) {
+			window.scrollTo(0, scrollPositionRef.current);
+			isFilteringRef.current = false;
+		}
+	});
+
+	// Prevent scroll jumping when filters change
+	const handleFilterChange = useCallback(
+		(setter: (value: string | undefined) => void) => {
+			return (value: string) => {
+				// Mark that we're filtering and save current position
+				isFilteringRef.current = true;
+				scrollPositionRef.current = window.scrollY;
+
+				// Update state
+				setter(value === "all" ? undefined : value);
+			};
+		},
+		[],
+	);
+
+	// Build query parameters - only include defined values
+	const queryParams: Record<string, string> = {
+		orderBy: "createdAt_desc",
+	};
+
+	if (dateRange?.start) {
+		queryParams.startDate = dateRange.start.toISOString();
+	}
+	if (dateRange?.end) {
+		queryParams.endDate = dateRange.end.toISOString();
+	}
+	if (finishReason && finishReason !== "all") {
+		queryParams.finishReason = finishReason;
+	}
+	if (unifiedFinishReason && unifiedFinishReason !== "all") {
+		queryParams.unifiedFinishReason = unifiedFinishReason;
+	}
+	if (provider && provider !== "all") {
+		queryParams.provider = provider;
+	}
+	if (model && model !== "all") {
+		queryParams.model = model;
+	}
+	if (selectedProject?.id) {
+		queryParams.projectId = selectedProject.id;
+	}
 
 	const { data, isLoading, error } = api.useQuery(
 		"get",
 		"/logs",
 		{
 			params: {
-				query: {
-					orderBy: "createdAt_desc",
-					startDate: dateRange?.start
-						? dateRange.start.toISOString()
-						: undefined,
-					endDate: dateRange?.end ? dateRange.end.toISOString() : undefined,
-					finishReason,
-					unifiedFinishReason,
-					provider,
-					model,
-					...(selectedProject?.id ? { projectId: selectedProject.id } : {}),
-				},
+				query: queryParams,
 			},
 		},
 		{
 			enabled: !!selectedProject?.id,
-			initialData,
+			initialData:
+				!dateRange &&
+				!finishReason &&
+				!unifiedFinishReason &&
+				!provider &&
+				!model
+					? initialData
+					: undefined,
+			refetchOnWindowFocus: false,
+			staleTime: 0, // Force refetch when filters change
 		},
 	);
 
@@ -133,12 +195,18 @@ export function RecentLogs({ initialData }: RecentLogsProps) {
 	}
 
 	return (
-		<div className="space-y-4 max-w-full overflow-hidden">
-			<div className="flex flex-wrap gap-2 mb-4">
+		<div
+			className="space-y-4 max-w-full overflow-hidden"
+			style={{ scrollBehavior: "auto" }}
+		>
+			<div className="flex flex-wrap gap-2 mb-4 sticky top-0 bg-background z-10 py-2">
 				<DateRangeSelect onChange={handleDateRangeChange} value="24h" />
 
-				<Select onValueChange={setFinishReason} value={finishReason}>
-					<SelectTrigger>
+				<Select
+					onValueChange={handleFilterChange(setFinishReason)}
+					value={finishReason || "all"}
+				>
+					<SelectTrigger className="w-[180px]">
 						<SelectValue placeholder="Filter by reason" />
 					</SelectTrigger>
 					<SelectContent>
@@ -152,10 +220,10 @@ export function RecentLogs({ initialData }: RecentLogsProps) {
 				</Select>
 
 				<Select
-					onValueChange={setUnifiedFinishReason}
-					value={unifiedFinishReason}
+					onValueChange={handleFilterChange(setUnifiedFinishReason)}
+					value={unifiedFinishReason || "all"}
 				>
-					<SelectTrigger>
+					<SelectTrigger className="w-[200px]">
 						<SelectValue placeholder="Filter by unified reason" />
 					</SelectTrigger>
 					<SelectContent>
@@ -171,8 +239,11 @@ export function RecentLogs({ initialData }: RecentLogsProps) {
 					</SelectContent>
 				</Select>
 
-				<Select onValueChange={setProvider} value={provider}>
-					<SelectTrigger>
+				<Select
+					onValueChange={handleFilterChange(setProvider)}
+					value={provider || "all"}
+				>
+					<SelectTrigger className="w-[160px]">
 						<SelectValue placeholder="Filter by provider" />
 					</SelectTrigger>
 					<SelectContent>
@@ -185,8 +256,11 @@ export function RecentLogs({ initialData }: RecentLogsProps) {
 					</SelectContent>
 				</Select>
 
-				<Select onValueChange={setModel} value={model}>
-					<SelectTrigger>
+				<Select
+					onValueChange={handleFilterChange(setModel)}
+					value={model || "all"}
+				>
+					<SelectTrigger className="w-[180px]">
 						<SelectValue placeholder="Filter by model" />
 					</SelectTrigger>
 					<SelectContent>

@@ -4,10 +4,7 @@ import {
 } from "@llmgateway/models";
 
 import { AuthLink } from "../shared/auth-link";
-import {
-	providerLogoUrls,
-	getProviderLogoDarkModeClasses,
-} from "@/components/provider-keys/provider-logo";
+import { providerLogoUrls } from "@/components/provider-keys/provider-logo";
 import { Button } from "@/lib/components/button";
 import Logo from "@/lib/icons/Logo";
 
@@ -19,15 +16,9 @@ export function Hero({ providerId }: HeroProps) {
 	const provider = providerDefinitions.find((p) => p.id === providerId)!;
 
 	const getProviderIcon = (providerId: ProviderId) => {
-		const logoUrl = providerLogoUrls[providerId];
-		if (logoUrl) {
-			return (
-				<img
-					src={logoUrl}
-					alt={`${providerId} logo`}
-					className={`h-24 w-24 object-contain ${getProviderLogoDarkModeClasses(providerId)}`}
-				/>
-			);
+		const LogoComponent = providerLogoUrls[providerId];
+		if (LogoComponent) {
+			return <LogoComponent className="h-24 w-24 object-contain" />;
 		}
 
 		return <Logo className="h-24 w-24" />;

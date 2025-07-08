@@ -20,8 +20,8 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/lib/components/radio-group";
 import { Step } from "@/lib/components/stepper";
 import { toast } from "@/lib/components/use-toast";
-import { useAppConfigValue } from "@/lib/config";
 import { useApi } from "@/lib/fetch-client";
+import { useAppConfig } from "@/lib/config";
 
 const CREDIT_OPTIONS = [
 	{ value: "10", label: "$10", description: "Good for testing" },
@@ -34,7 +34,7 @@ export function CreditsStep({
 }: {
 	onPaymentSuccess?: () => void;
 }) {
-	const config = useAppConfigValue();
+	const config = useAppConfig();
 	const [isLoading, setIsLoading] = useState(false);
 	const [selectedAmount, setSelectedAmount] = useState("50");
 	const [isSuccess, setIsSuccess] = useState(false);
@@ -216,8 +216,8 @@ export function CreditsStep({
 									</p>
 								</div>
 								<p className="text-sm mt-4">
-									You're all set to start using LLM Gateway. You can always add
-									more credits later from the dashboard.
+									You&apos;re all set to start using LLM Gateway. You can always
+									add more credits later from the dashboard.
 								</p>
 							</div>
 						)}
