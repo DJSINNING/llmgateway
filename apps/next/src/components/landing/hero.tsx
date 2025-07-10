@@ -366,6 +366,7 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 								<Link
 									href="/models"
 									className="block text-sm duration-150 hover:opacity-75"
+									prefetch={true}
 								>
 									<span>View All Providers</span>
 									<ChevronRight className="ml-1 inline-block size-3" />

@@ -177,7 +177,10 @@ export function HeroCompare({ content }: HeroCompareProps) {
 												</span>
 											</a>
 										) : (
-											<Link href={heroContent.cta.secondary.href}>
+											<Link
+												href={heroContent.cta.secondary.href}
+												prefetch={true}
+											>
 												<span className="text-nowrap">
 													{heroContent.cta.secondary.text}
 												</span>

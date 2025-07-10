@@ -1,6 +1,6 @@
 "use client";
 
-import { useDashboardState } from "@/lib/dashboard-state";
+import { useDashboardNavigation } from "@/hooks/useDashboardNavigation";
 import { useApi } from "@/lib/fetch-client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -27,7 +27,7 @@ interface TransactionsClientProps {
 export function TransactionsClient({
 	initialTransactionsData,
 }: TransactionsClientProps) {
-	const { selectedOrganization } = useDashboardState();
+	const { selectedOrganization } = useDashboardNavigation();
 	const isMobile = useIsMobile();
 	const api = useApi();
 

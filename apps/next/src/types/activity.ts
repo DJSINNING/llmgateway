@@ -56,3 +56,56 @@ export type ActivitT =
 			}[];
 	  }
 	| undefined;
+
+export interface LogsData {
+	message?: string;
+	logs: {
+		id: string;
+		requestId: string;
+		createdAt: string;
+		updatedAt: string;
+		organizationId: string;
+		projectId: string;
+		apiKeyId: string;
+		duration: number;
+		requestedModel: string;
+		requestedProvider: string | null;
+		usedModel: string;
+		usedProvider: string;
+		responseSize: number;
+		content: string | null;
+		unifiedFinishReason: string | null;
+		finishReason: string | null;
+		promptTokens: string | null;
+		completionTokens: string | null;
+		totalTokens: string | null;
+		reasoningTokens: string | null;
+		messages?: unknown;
+		temperature: number | null;
+		maxTokens: number | null;
+		topP: number | null;
+		frequencyPenalty: number | null;
+		presencePenalty: number | null;
+		hasError: boolean | null;
+		errorDetails: {
+			statusCode: number;
+			statusText: string;
+			responseText: string;
+		} | null;
+		cost: number | null;
+		inputCost: number | null;
+		outputCost: number | null;
+		requestCost: number | null;
+		estimatedCost: boolean | null;
+		canceled: boolean | null;
+		streamed: boolean | null;
+		cached: boolean | null;
+		mode: "api-keys" | "credits" | "hybrid";
+		usedMode: "api-keys" | "credits";
+	}[];
+	pagination: {
+		nextCursor: string | null;
+		hasMore: boolean;
+		limit: number;
+	};
+}

@@ -305,7 +305,11 @@ export function ChatSidebar({
 		<Sidebar className={className}>
 			<SidebarHeader>
 				<div className="flex flex-col items-center gap-4 mb-4">
-					<Link href="/" className="flex self-start items-center gap-2 my-2">
+					<Link
+						href="/"
+						className="flex self-start items-center gap-2 my-2"
+						prefetch={true}
+					>
 						<Logo className="h-10 w-10" />
 						<h1 className="text-xl font-semibold">LLM Gateway</h1>
 					</Link>

@@ -11,6 +11,7 @@ export const AppHeader = () => (
 					<Link
 						href="/"
 						className="flex items-center space-x-2 text-lg font-semibold text-foreground"
+						prefetch={true}
 					>
 						<Logo className="h-6 w-6" />
 						<span>LLM Gateway</span>
@@ -19,18 +20,21 @@ export const AppHeader = () => (
 						<Link
 							href="/models"
 							className="hover:text-foreground transition-colors"
+							prefetch={true}
 						>
 							Models
 						</Link>
 						<Link
 							href="/playground"
 							className="hover:text-foreground transition-colors"
+							prefetch={true}
 						>
 							Playground
 						</Link>
 						<Link
 							href="/changelog"
 							className="hover:text-foreground transition-colors"
+							prefetch={true}
 						>
 							Changelog
 						</Link>
@@ -40,6 +44,7 @@ export const AppHeader = () => (
 					<Link
 						href="/login"
 						className="hidden sm:inline-block text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+						prefetch={true}
 					>
 						Log in
 					</Link>
@@ -48,7 +53,9 @@ export const AppHeader = () => (
 						variant="secondary"
 						className="rounded-md text-sm font-medium"
 					>
-						<Link href="/signup">Sign up</Link>
+						<Link href="/signup" prefetch={true}>
+							Sign up
+						</Link>
 					</Button>
 				</div>
 			</div>

@@ -1,43 +1,46 @@
 "use client";
+
 import { useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
+import { usePostHog } from "posthog-js/react";
 import {
-	BarChart3,
-	Key,
-	LayoutDashboard,
-	LogOutIcon,
-	Settings,
 	Activity,
-	KeyRound,
-	X,
-	BotMessageSquare,
-	BrainCircuit,
-	FileText,
-	MoreHorizontal,
-	User as UserIcon,
+	BarChart3,
+	ChevronUp,
+	ComputerIcon,
 	CreditCard,
+	ExternalLink,
+	Key,
+	KeyRound,
+	LayoutDashboard,
+	MessageSquare,
+	MoonIcon,
+	Settings,
 	Shield,
 	SunIcon,
-	MoonIcon,
-	ComputerIcon,
-	Plus,
+	User as UserIcon,
+	X,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { usePostHog } from "posthog-js/react";
-import { useState, useEffect } from "react";
+import Link from "next/link";
+import {
+	usePathname,
+	useRouter,
+	useSearchParams,
+	type ReadonlyURLSearchParams,
+} from "next/navigation";
+import { useMemo, useState } from "react";
 
 import { OrganizationSwitcher } from "./organization-switcher";
 import { TopUpCreditsDialog } from "@/components/credits/top-up-credits-dialog";
+import { UpgradeToProDialog } from "@/components/shared/upgrade-to-pro-dialog";
 import { useUser } from "@/hooks/useUser";
+import { useDashboardNavigation } from "@/hooks/useDashboardNavigation";
 import { useAuth } from "@/lib/auth-client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/lib/components/avatar";
 import { Button } from "@/lib/components/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
-	DropdownMenuGroup,
 	DropdownMenuItem,
-	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/lib/components/dropdown-menu";
@@ -57,49 +60,38 @@ import {
 	SidebarGroupLabel,
 	SidebarHeader,
 	SidebarMenu,
+	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarMenuSub,
-	SidebarMenuSubItem,
 	SidebarMenuSubButton,
-	SidebarMenuButton,
-	SidebarRail,
+	SidebarMenuSubItem,
 	useSidebar,
-	SidebarTrigger,
 } from "@/lib/components/sidebar";
-import { useAppConfig } from "@/lib/config";
-import { useDashboardState } from "@/lib/dashboard-state";
-import Logo from "@/lib/icons/Logo";
 import { cn } from "@/lib/utils";
-
-import type { Organization, User } from "@/lib/types";
+import { buildUrlWithParams } from "@/lib/navigation-utils";
+import Logo from "@/lib/icons/Logo";
 import type { LucideIcon } from "lucide-react";
-import {
-	usePathname,
-	useRouter,
-	useSearchParams,
-	type ReadonlyURLSearchParams,
-} from "next/navigation";
-import { preserveOrgAndProjectParams } from "@/lib/navigation-utils";
+import type { Organization, User } from "@/lib/types";
 
 // Configuration
 const PROJECT_NAVIGATION = [
 	{
-		href: "/dashboard",
+		href: "",
 		label: "Dashboard",
 		icon: LayoutDashboard,
 	},
 	{
-		href: "/dashboard/activity",
+		href: "activity",
 		label: "Activity",
 		icon: Activity,
 	},
 	{
-		href: "/dashboard/usage",
+		href: "usage",
 		label: "Usage & Metrics",
 		icon: BarChart3,
 	},
 	{
-		href: "/dashboard/api-keys",
+		href: "api-keys",
 		label: "API Keys",
 		icon: Key,
 	},
@@ -107,23 +99,23 @@ const PROJECT_NAVIGATION = [
 
 const PROJECT_SETTINGS = [
 	{
-		href: "/dashboard/settings/preferences",
+		href: "settings/preferences",
 		label: "Preferences",
 	},
 ] as const;
 
 const ORGANIZATION_SETTINGS = [
 	{
-		href: "/dashboard/settings/billing",
+		href: "settings/billing",
 		label: "Billing",
 		search: { success: undefined, canceled: undefined },
 	},
 	{
-		href: "/dashboard/settings/transactions",
+		href: "settings/transactions",
 		label: "Transactions",
 	},
 	{
-		href: "/dashboard/settings/policies",
+		href: "settings/policies",
 		label: "Policies",
 	},
 ] as const;
@@ -132,18 +124,18 @@ const ORGANIZATION_SETTINGS = [
 
 const USER_MENU_ITEMS = [
 	{
-		href: "/dashboard/settings/account",
+		href: "settings/account",
 		label: "Account",
 		icon: UserIcon,
 	},
 	{
-		href: "/dashboard/settings/billing",
+		href: "settings/billing",
 		label: "Billing",
 		icon: CreditCard,
 		search: { success: undefined, canceled: undefined },
 	},
 	{
-		href: "/dashboard/settings/security",
+		href: "settings/security",
 		label: "Security",
 		icon: Shield,
 	},
@@ -153,6 +145,7 @@ interface DashboardSidebarProps {
 	organizations: Organization[];
 	onSelectOrganization: (org: Organization | null) => void;
 	onOrganizationCreated: (org: Organization) => void;
+	selectedOrganization: Organization | null;
 }
 
 // Sub-components
@@ -161,20 +154,21 @@ function DashboardSidebarHeader({
 	selectedOrganization,
 	onSelectOrganization,
 	onOrganizationCreated,
-	searchParams,
 }: {
 	organizations: Organization[];
 	selectedOrganization: Organization | null;
 	onSelectOrganization: (org: Organization | null) => void;
 	onOrganizationCreated: (org: Organization) => void;
-	searchParams: ReadonlyURLSearchParams;
 }) {
+	const { buildUrl } = useDashboardNavigation();
+
 	return (
 		<SidebarHeader>
 			<div className="flex h-14 items-center px-4">
 				<Link
-					href={preserveOrgAndProjectParams("/dashboard", searchParams)}
+					href={buildUrl()}
 					className="inline-flex items-center space-x-2"
+					prefetch={true}
 				>
 					<Logo className="h-8 w-8 rounded-full text-black dark:text-white" />
 					<span className="text-xl font-bold tracking-tight">LLM Gateway</span>
@@ -194,14 +188,13 @@ function NavigationItem({
 	item,
 	isActive,
 	onClick,
-	searchParams,
 }: {
 	item: (typeof PROJECT_NAVIGATION)[number];
 	isActive: (path: string) => boolean;
 	onClick: () => void;
-	searchParams: ReadonlyURLSearchParams;
 }) {
-	const href = preserveOrgAndProjectParams(item.href, searchParams);
+	const { buildUrl } = useDashboardNavigation();
+	const href = buildUrl(item.href);
 
 	return (
 		<SidebarMenuItem>
@@ -227,19 +220,19 @@ function ProjectSettingsSection({
 	isActive,
 	isMobile,
 	toggleSidebar,
-	searchParams,
 }: {
 	isActive: (path: string) => boolean;
 	isMobile: boolean;
 	toggleSidebar: () => void;
-	searchParams: ReadonlyURLSearchParams;
 }) {
+	const { buildUrl } = useDashboardNavigation();
+
 	return (
 		<SidebarMenuItem>
 			<div
 				className={cn(
 					"flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer",
-					isActive("/dashboard/settings/preferences")
+					isActive("settings/preferences")
 						? "bg-primary/10 text-primary"
 						: "text-foreground/70 hover:bg-accent hover:text-accent-foreground",
 				)}
@@ -252,7 +245,7 @@ function ProjectSettingsSection({
 					<SidebarMenuSubItem key={item.href}>
 						<SidebarMenuSubButton asChild isActive={isActive(item.href)}>
 							<Link
-								href={preserveOrgAndProjectParams(item.href, searchParams)}
+								href={buildUrl(item.href)}
 								onClick={() => {
 									if (isMobile) {
 										toggleSidebar();
@@ -281,6 +274,8 @@ function OrganizationSection({
 	toggleSidebar: () => void;
 	searchParams: ReadonlyURLSearchParams;
 }) {
+	const { buildUrl } = useDashboardNavigation();
+
 	return (
 		<SidebarGroup>
 			<SidebarGroupLabel className="text-muted-foreground px-2 text-xs font-medium">
@@ -290,13 +285,10 @@ function OrganizationSection({
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<Link
-							href={preserveOrgAndProjectParams(
-								"/dashboard/provider-keys",
-								searchParams,
-							)}
+							href={buildUrl("provider-keys")}
 							className={cn(
 								"flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-								isActive("/dashboard/provider-keys")
+								isActive("provider-keys")
 									? "bg-primary/10 text-primary"
 									: "text-foreground/70 hover:bg-accent hover:text-accent-foreground",
 							)}
@@ -315,9 +307,9 @@ function OrganizationSection({
 						<div
 							className={cn(
 								"flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer",
-								isActive("/dashboard/settings/billing") ||
-									isActive("/dashboard/settings/transactions") ||
-									isActive("/dashboard/settings/policies")
+								isActive("settings/billing") ||
+									isActive("settings/transactions") ||
+									isActive("settings/policies")
 									? "bg-primary/10 text-primary"
 									: "text-foreground/70 hover:bg-accent hover:text-accent-foreground",
 							)}
@@ -330,10 +322,15 @@ function OrganizationSection({
 								<SidebarMenuSubItem key={item.href}>
 									<SidebarMenuSubButton asChild isActive={isActive(item.href)}>
 										<Link
-											href={preserveOrgAndProjectParams(
-												item.href,
-												searchParams,
-											)}
+											href={
+												"search" in item
+													? buildUrlWithParams(
+															buildUrl(item.href),
+															searchParams,
+															item.search,
+														)
+													: buildUrl(item.href)
+											}
 											onClick={() => {
 												if (isMobile) {
 													toggleSidebar();
@@ -359,7 +356,6 @@ function ToolsResourcesSection({
 	isActive,
 	isMobile,
 	toggleSidebar,
-	searchParams,
 }: {
 	toolsResources: readonly {
 		href: string;
@@ -370,8 +366,9 @@ function ToolsResourcesSection({
 	isActive: (path: string) => boolean;
 	isMobile: boolean;
 	toggleSidebar: () => void;
-	searchParams: ReadonlyURLSearchParams;
 }) {
+	const { buildUrl } = useDashboardNavigation();
+
 	return (
 		<SidebarGroup>
 			<SidebarGroupLabel className="text-muted-foreground px-2 text-xs font-medium">
@@ -383,7 +380,7 @@ function ToolsResourcesSection({
 						<SidebarMenuItem key={item.href}>
 							{item.internal ? (
 								<Link
-									href={preserveOrgAndProjectParams(item.href, searchParams)}
+									href={buildUrl(item.href)}
 									className={cn(
 										"flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
 										isActive(item.href)
@@ -409,9 +406,15 @@ function ToolsResourcesSection({
 										"flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
 										"text-foreground/70 hover:bg-accent hover:text-accent-foreground",
 									)}
+									onClick={() => {
+										if (isMobile) {
+											toggleSidebar();
+										}
+									}}
 								>
 									<item.icon className="h-4 w-4" />
 									<span>{item.label}</span>
+									<ExternalLink className="ml-auto h-3 w-3" />
 								</a>
 							)}
 						</SidebarMenuItem>
@@ -419,55 +422,6 @@ function ToolsResourcesSection({
 				</SidebarMenu>
 			</SidebarGroupContent>
 		</SidebarGroup>
-	);
-}
-
-function ThemeSelect() {
-	const { theme, setTheme } = useTheme();
-	const [mounted, setMounted] = useState(false);
-
-	useEffect(() => {
-		setMounted(true);
-	}, []);
-
-	if (!mounted) {
-		return (
-			<div className="px-2 py-1.5">
-				<div className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
-					<span className="text-muted-foreground">Select theme</span>
-				</div>
-			</div>
-		);
-	}
-
-	return (
-		<div className="px-2 py-1.5">
-			<Select value={theme} onValueChange={setTheme}>
-				<SelectTrigger className="w-full">
-					<SelectValue placeholder="Select theme" />
-				</SelectTrigger>
-				<SelectContent>
-					<SelectItem value="light">
-						<div className="flex items-center">
-							<SunIcon className="mr-2 h-4 w-4" />
-							Light
-						</div>
-					</SelectItem>
-					<SelectItem value="dark">
-						<div className="flex items-center">
-							<MoonIcon className="mr-2 h-4 w-4" />
-							Dark
-						</div>
-					</SelectItem>
-					<SelectItem value="system">
-						<div className="flex items-center">
-							<ComputerIcon className="mr-2 h-4 w-4" />
-							System
-						</div>
-					</SelectItem>
-				</SelectContent>
-			</Select>
-		</div>
 	);
 }
 
@@ -493,10 +447,42 @@ function CreditsDisplay({
 							</span>
 						</div>
 					</div>
-					<Plus className="h-4 w-4 text-muted-foreground ml-auto" />
+					<span className="text-xs text-muted-foreground">Add</span>
 				</button>
 			</TopUpCreditsDialog>
 		</div>
+	);
+}
+
+function ThemeSelect() {
+	const { theme, setTheme } = useTheme();
+
+	return (
+		<Select value={theme} onValueChange={setTheme}>
+			<SelectTrigger className="w-full">
+				<SelectValue placeholder="Select theme" />
+			</SelectTrigger>
+			<SelectContent>
+				<SelectItem value="light">
+					<div className="flex items-center">
+						<SunIcon className="mr-2 h-4 w-4" />
+						Light
+					</div>
+				</SelectItem>
+				<SelectItem value="dark">
+					<div className="flex items-center">
+						<MoonIcon className="mr-2 h-4 w-4" />
+						Dark
+					</div>
+				</SelectItem>
+				<SelectItem value="system">
+					<div className="flex items-center">
+						<ComputerIcon className="mr-2 h-4 w-4" />
+						System
+					</div>
+				</SelectItem>
+			</SelectContent>
+		</Select>
 	);
 }
 
@@ -511,99 +497,78 @@ function UserDropdownMenu({
 	toggleSidebar: () => void;
 	onLogout: () => void;
 }) {
+	const { buildUrl } = useDashboardNavigation();
+	const searchParams = useSearchParams();
+
 	const getUserInitials = () => {
-		if (user?.name) {
-			return user.name
-				.split(" ")
-				.slice(0, 2)
-				.map((n: string) => n[0])
-				.join("")
-				.toUpperCase();
-		}
-		return user?.email ? user.email[0].toUpperCase() : "U";
+		if (!user?.name) return "U";
+		return user.name
+			.split(" ")
+			.map((n: string) => n[0])
+			.join("")
+			.toUpperCase()
+			.slice(0, 2);
 	};
 
 	return (
-		<SidebarMenu>
-			<SidebarMenuItem>
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<SidebarMenuButton
-							size="lg"
-							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<SidebarMenuButton
+					size="lg"
+					className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+				>
+					<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+						<span className="text-xs font-semibold">{getUserInitials()}</span>
+					</div>
+					<div className="grid flex-1 text-left text-sm leading-tight">
+						<span className="truncate font-semibold">{user?.name}</span>
+						<span className="truncate text-xs text-muted-foreground">
+							{user?.email}
+						</span>
+					</div>
+					<ChevronUp className="ml-auto size-4" />
+				</SidebarMenuButton>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent
+				className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+				side="top"
+				align="end"
+				sideOffset={4}
+			>
+				<div className="p-2">
+					<ThemeSelect />
+				</div>
+				<DropdownMenuSeparator />
+				{USER_MENU_ITEMS.map((item) => (
+					<DropdownMenuItem key={item.href} asChild>
+						<Link
+							href={
+								"search" in item
+									? buildUrlWithParams(
+											buildUrl(item.href),
+											searchParams,
+											item.search,
+										)
+									: buildUrl(item.href)
+							}
+							onClick={() => {
+								if (isMobile) {
+									toggleSidebar();
+								}
+							}}
+							prefetch={true}
 						>
-							<Avatar className="h-8 w-8 rounded-lg border">
-								<AvatarImage
-									src="/vibrant-street-market.png"
-									alt={user?.name || "User"}
-								/>
-								<AvatarFallback className="rounded-lg">
-									{getUserInitials()}
-								</AvatarFallback>
-							</Avatar>
-							<div className="grid flex-1 text-left text-sm leading-tight">
-								<span className="truncate font-medium">{user?.name}</span>
-								<span className="text-muted-foreground truncate text-xs">
-									{user?.email}
-								</span>
-							</div>
-							<MoreHorizontal className="ml-auto size-4" />
-						</SidebarMenuButton>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent
-						className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-						side={isMobile ? "bottom" : "right"}
-						align="end"
-						sideOffset={4}
-					>
-						<DropdownMenuLabel className="p-0 font-normal">
-							<div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-								<Avatar className="h-8 w-8 rounded-lg border">
-									<AvatarImage
-										src="/vibrant-street-market.png"
-										alt={user?.name || "User"}
-									/>
-									<AvatarFallback className="rounded-lg">
-										{getUserInitials()}
-									</AvatarFallback>
-								</Avatar>
-								<div className="grid flex-1 text-left text-sm leading-tight">
-									<span className="truncate font-medium">{user?.name}</span>
-									<span className="text-muted-foreground truncate text-xs">
-										{user?.email}
-									</span>
-								</div>
-							</div>
-						</DropdownMenuLabel>
-						<DropdownMenuSeparator />
-						<DropdownMenuGroup>
-							<ThemeSelect />
-							{USER_MENU_ITEMS.map((item) => (
-								<DropdownMenuItem key={item.href} asChild>
-									<Link
-										href={item.href}
-										onClick={() => {
-											if (isMobile) {
-												toggleSidebar();
-											}
-										}}
-										prefetch={true}
-									>
-										<item.icon className="mr-2 h-4 w-4" />
-										{item.label}
-									</Link>
-								</DropdownMenuItem>
-							))}
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem onClick={onLogout}>
-							<LogOutIcon className="mr-2 h-4 w-4" />
-							Log out
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
-			</SidebarMenuItem>
-		</SidebarMenu>
+							<item.icon className="mr-2 h-4 w-4" />
+							{item.label}
+						</Link>
+					</DropdownMenuItem>
+				))}
+				<DropdownMenuSeparator />
+				<DropdownMenuItem onClick={onLogout}>
+					<span>Log out</span>
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
 
@@ -621,88 +586,90 @@ function UpgradeCTA({
 	}
 
 	return (
-		<div className="flex relative flex-col items-start space-y-4 rounded-lg bg-primary/5 p-4 dark:bg-primary/10">
-			<button
-				aria-label="Dismiss"
-				onClick={onHide}
-				className="absolute right-1.5 top-1.5 rounded-full p-1 text-muted-foreground/70 hover:text-foreground transition"
-			>
-				<X className="h-3 w-3" />
-			</button>
-			<div>
-				<p className="text-sm font-medium">Upgrade to Pro</p>
-				<p className="text-xs text-muted-foreground">
-					0% credits fees, BYOK & more
-				</p>
+		<div className="px-4 py-2">
+			<div className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 p-4 text-white">
+				<div className="flex items-start justify-between">
+					<div className="flex-1">
+						<h3 className="text-sm font-semibold">Upgrade to Pro</h3>
+						<p className="text-xs text-blue-100 mt-1">
+							Unlock advanced features and priority support
+						</p>
+					</div>
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={onHide}
+						className="h-6 w-6 p-0 text-white hover:bg-white/20"
+					>
+						<X className="h-3 w-3" />
+					</Button>
+				</div>
+				<UpgradeToProDialog>
+					<Button
+						variant="secondary"
+						size="sm"
+						className="mt-2 w-full bg-white text-blue-600 hover:bg-blue-50"
+					>
+						Upgrade Now
+					</Button>
+				</UpgradeToProDialog>
 			</div>
-			<Button asChild>
-				<Link href="/dashboard/settings/billing" prefetch={true}>
-					Upgrade
-				</Link>
-			</Button>
 		</div>
 	);
 }
 
-// Main component
 export function DashboardSidebar({
 	organizations,
 	onSelectOrganization,
 	onOrganizationCreated,
+	selectedOrganization,
 }: DashboardSidebarProps) {
-	const config = useAppConfig();
-	const queryClient = useQueryClient();
+	const { isMobile, toggleSidebar } = useSidebar();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
-	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
-	const { user } = useUser();
-	const { selectedOrganization } = useDashboardState();
 	const router = useRouter();
-	const { signOut } = useAuth();
-
-	const toolsResources = [
-		{
-			href: "/dashboard/models",
-			label: "Models",
-			icon: BrainCircuit,
-			internal: true,
-		},
-		{
-			href: "/playground",
-			label: "Playground",
-			icon: BotMessageSquare,
-			internal: false,
-		},
-		{
-			href: config.docsUrl,
-			label: "Docs",
-			icon: FileText,
-			internal: false,
-		},
-	] as const;
 	const posthog = usePostHog();
+	const queryClient = useQueryClient();
+	const { signOut } = useAuth();
+	const [showUpgradeCTA, setShowUpgradeCTA] = useState(true);
 
-	const isActive = (path: string) => pathname === path;
+	const { user } = useUser({
+		redirectTo: "/login",
+		redirectWhen: "unauthenticated",
+	});
 
-	const [mounted, setMounted] = useState(false);
-	const [showCreditCTA, setShowCreditCTA] = useState(true);
+	// selectedOrganization is now passed as a prop from the layout
 
-	// Track if component has mounted to prevent hydration issues
-	useEffect(() => {
-		setMounted(true);
-	}, []);
-
-	// Update CTA state from localStorage after mounting
-	useEffect(() => {
-		if (mounted && typeof window !== "undefined") {
-			const hideCTA = localStorage.getItem("hide-credit-cta") === "true";
-			setShowCreditCTA(!hideCTA);
+	// Update isActive function to work with new route structure
+	const isActive = (path: string) => {
+		if (path === "") {
+			// For dashboard home, check if we're at the base dashboard route
+			return pathname.match(/^\/dashboard\/[^\/]+\/[^\/]+$/) !== null;
 		}
-	}, [mounted]);
+		// For other paths, check if pathname ends with the path
+		return pathname.endsWith(`/${path}`);
+	};
+
+	const toolsResources = useMemo(
+		() => [
+			{
+				href: "models",
+				label: "Supported Models",
+				icon: MessageSquare,
+				internal: true,
+			},
+			{
+				href: "https://docs.llmgateway.io",
+				label: "Documentation",
+				icon: ExternalLink,
+				internal: false,
+			},
+		],
+		[],
+	);
 
 	const hideCreditCTA = () => {
-		localStorage.setItem("hide-credit-cta", "true");
-		setShowCreditCTA(false);
+		setShowUpgradeCTA(false);
 	};
 
 	const logout = async () => {
@@ -723,80 +690,75 @@ export function DashboardSidebar({
 		}
 	};
 
+	if (!user) {
+		return null;
+	}
+
 	return (
-		<>
-			{sidebarState === "collapsed" && <SidebarTrigger />}
-			<Sidebar variant="floating">
-				<DashboardSidebarHeader
-					organizations={organizations}
-					selectedOrganization={selectedOrganization}
-					onSelectOrganization={onSelectOrganization}
-					onOrganizationCreated={onOrganizationCreated}
+		<Sidebar variant="inset" collapsible="icon">
+			<DashboardSidebarHeader
+				organizations={organizations}
+				selectedOrganization={selectedOrganization}
+				onSelectOrganization={onSelectOrganization}
+				onOrganizationCreated={onOrganizationCreated}
+			/>
+			<SidebarContent>
+				<SidebarGroup>
+					<SidebarGroupLabel className="text-muted-foreground px-2 text-xs font-medium">
+						Project
+					</SidebarGroupLabel>
+					<SidebarGroupContent className="mt-2">
+						<SidebarMenu>
+							{PROJECT_NAVIGATION.map((item) => (
+								<NavigationItem
+									key={item.href}
+									item={item}
+									isActive={isActive}
+									onClick={handleNavClick}
+								/>
+							))}
+							<ProjectSettingsSection
+								isActive={isActive}
+								isMobile={isMobile}
+								toggleSidebar={toggleSidebar}
+							/>
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</SidebarGroup>
+
+				<OrganizationSection
+					isActive={isActive}
+					isMobile={isMobile}
+					toggleSidebar={toggleSidebar}
 					searchParams={searchParams}
 				/>
 
-				<SidebarContent className="px-2 py-4">
-					{/* Project Section */}
-					<SidebarGroup>
-						<SidebarGroupLabel className="text-muted-foreground px-2 text-xs font-medium">
-							Project
-						</SidebarGroupLabel>
-						<SidebarGroupContent className="mt-2">
-							<SidebarMenu>
-								{PROJECT_NAVIGATION.map((item) => (
-									<NavigationItem
-										key={item.href}
-										item={item}
-										isActive={isActive}
-										onClick={handleNavClick}
-										searchParams={searchParams}
-									/>
-								))}
-								<ProjectSettingsSection
-									isActive={isActive}
-									isMobile={isMobile}
-									toggleSidebar={toggleSidebar}
-									searchParams={searchParams}
-								/>
-							</SidebarMenu>
-						</SidebarGroupContent>
-					</SidebarGroup>
+				<ToolsResourcesSection
+					toolsResources={toolsResources}
+					isActive={isActive}
+					isMobile={isMobile}
+					toggleSidebar={toggleSidebar}
+				/>
+			</SidebarContent>
 
-					<OrganizationSection
-						isActive={isActive}
-						isMobile={isMobile}
-						toggleSidebar={toggleSidebar}
-						searchParams={searchParams}
-					/>
-
-					<ToolsResourcesSection
-						toolsResources={toolsResources}
-						isActive={isActive}
-						isMobile={isMobile}
-						toggleSidebar={toggleSidebar}
-						searchParams={searchParams}
-					/>
-				</SidebarContent>
-
-				<SidebarFooter className="border-t">
-					<UpgradeCTA
-						show={showCreditCTA}
-						onHide={hideCreditCTA}
-						selectedOrganization={selectedOrganization}
-					/>
-					<CreditsDisplay selectedOrganization={selectedOrganization} />
-					{user && (
+			<SidebarFooter>
+				<CreditsDisplay selectedOrganization={selectedOrganization} />
+				<UpgradeCTA
+					show={showUpgradeCTA}
+					onHide={hideCreditCTA}
+					selectedOrganization={selectedOrganization}
+				/>
+				<SidebarMenu>
+					<SidebarMenuItem>
 						<UserDropdownMenu
 							user={user}
 							isMobile={isMobile}
 							toggleSidebar={toggleSidebar}
 							onLogout={logout}
 						/>
-					)}
-				</SidebarFooter>
-
-				<SidebarRail />
-			</Sidebar>
-		</>
+					</SidebarMenuItem>
+				</SidebarMenu>
+			</SidebarFooter>
+		</Sidebar>
 	);
 }

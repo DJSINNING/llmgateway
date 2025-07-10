@@ -22,6 +22,9 @@ export function buildUrlWithParams(
 	return queryString ? `${basePath}?${queryString}` : basePath;
 }
 
+/**
+ * @deprecated Use buildDashboardUrl instead. This function is kept for compatibility with old search param structure.
+ */
 export function preserveOrgAndProjectParams(
 	basePath: string,
 	searchParams: ReadonlyURLSearchParams,
@@ -41,4 +44,41 @@ export function preserveOrgAndProjectParams(
 
 	const queryString = params.toString();
 	return queryString ? `${basePath}?${queryString}` : basePath;
+}
+
+/**
+ * Build a dashboard URL with the new route structure
+ */
+export function buildDashboardUrl(
+	orgId?: string | null,
+	projectId?: string | null,
+	subPath?: string,
+): string {
+	if (!orgId || !projectId) {
+		// Fallback to base dashboard (will redirect to proper structure)
+		return "/dashboard";
+	}
+
+	const basePath = `/dashboard/${orgId}/${projectId}`;
+	return subPath ? `${basePath}/${subPath}` : basePath;
+}
+
+/**
+ * Extract orgId and projectId from current pathname
+ */
+export function extractOrgAndProjectFromPath(pathname: string): {
+	orgId: string | null;
+	projectId: string | null;
+} {
+	const match = pathname.match(/^\/dashboard\/([^\/]+)\/([^\/]+)/);
+	if (match) {
+		return {
+			orgId: match[1],
+			projectId: match[2],
+		};
+	}
+	return {
+		orgId: null,
+		projectId: null,
+	};
 }

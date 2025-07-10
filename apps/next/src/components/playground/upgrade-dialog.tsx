@@ -158,6 +158,7 @@ export function UpgradeDialog({
 							<Link
 								href="/dashboard"
 								className="text-foreground hover:underline font-medium"
+								prefetch={true}
 							>
 								The Dashboard
 							</Link>

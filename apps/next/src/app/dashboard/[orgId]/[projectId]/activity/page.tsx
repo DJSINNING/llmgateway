@@ -1,6 +1,6 @@
 import { ActivityClient } from "@/components/activity/activity-client";
 import { fetchServerData } from "@/lib/server-api";
-import type { ActivitT } from "@/types/activity";
+import type { ActivitT, LogsData } from "@/types/activity";
 
 // Force dynamic rendering since this page uses server-side data fetching with cookies
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ export default async function ActivityPage({
 	const daysParam = days === "30" ? "30" : "7";
 
 	// Server-side data fetching for logs
-	const initialLogsData = await fetchServerData("GET", "/logs", {
+	const initialLogsData = await fetchServerData<LogsData>("GET", "/logs", {
 		params: {
 			query: {
 				orderBy: "createdAt_desc",
@@ -45,7 +45,7 @@ export default async function ActivityPage({
 
 	return (
 		<ActivityClient
-			initialLogsData={initialLogsData}
+			initialLogsData={initialLogsData || undefined}
 			initialActivityData={initialActivityData || undefined}
 		/>
 	);

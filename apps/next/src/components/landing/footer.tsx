@@ -79,6 +79,7 @@ export default function Footer() {
 									<Link
 										href="/models"
 										className="text-sm hover:text-black dark:hover:text-white"
+										prefetch={true}
 									>
 										Models
 									</Link>
@@ -87,6 +88,7 @@ export default function Footer() {
 									<Link
 										href="/playground"
 										className="text-sm hover:text-black dark:hover:text-white"
+										prefetch={true}
 									>
 										Playground
 									</Link>
@@ -95,6 +97,7 @@ export default function Footer() {
 									<Link
 										href="/changelog"
 										className="text-sm hover:text-black dark:hover:text-white"
+										prefetch={true}
 									>
 										Changelog
 									</Link>
@@ -174,6 +177,7 @@ export default function Footer() {
 									<Link
 										href="/compare/open-router"
 										className="text-sm hover:text-black dark:hover:text-white"
+										prefetch={true}
 									>
 										OpenRouter
 									</Link>
@@ -191,6 +195,7 @@ export default function Footer() {
 										<Link
 											href={`/providers/${provider.id}`}
 											className="text-sm hover:text-black dark:hover:text-white"
+											prefetch={true}
 										>
 											{provider.name}
 										</Link>

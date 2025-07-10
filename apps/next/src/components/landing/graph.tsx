@@ -136,7 +136,9 @@ export function Graph() {
 
 			<div className="mt-12 flex justify-center space-x-6">
 				<Button asChild>
-					<Link href="/models">View all models</Link>
+					<Link href="/models" prefetch={true}>
+						View all models
+					</Link>
 				</Button>
 				<Button variant="outline" asChild>
 					<a

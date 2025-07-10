@@ -46,7 +46,7 @@ export function ChatHeader({
 				</Button>
 			</div>
 			<div className="flex items-center gap-4 ml-auto">
-				<Link href="/dashboard">
+				<Link href="/dashboard" prefetch={true}>
 					<span className="text-nowrap">Go to Dashboard</span>
 				</Link>
 			</div>

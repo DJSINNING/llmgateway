@@ -192,6 +192,7 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 								<Link
 									href={`/providers/${providerId}`}
 									className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+									prefetch={true}
 								>
 									{getProviderLogo(providerId)}
 									<h2 className="text-2xl font-semibold">{providerName}</h2>

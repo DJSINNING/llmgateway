@@ -1,6 +1,7 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
+import { usePostHog } from "posthog-js/react";
 
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { MobileHeader } from "@/components/dashboard/mobile-header";
@@ -11,13 +12,19 @@ interface DashboardLayoutClientProps {
 	children: ReactNode;
 	initialOrganizationsData?: unknown;
 	initialProjectsData?: unknown;
+	selectedOrgId?: string;
+	selectedProjectId?: string;
 }
 
 export function DashboardLayoutClient({
 	children,
 	initialOrganizationsData,
 	initialProjectsData,
+	selectedOrgId,
+	selectedProjectId,
 }: DashboardLayoutClientProps) {
+	const posthog = usePostHog();
+
 	const {
 		organizations,
 		projects,
@@ -30,7 +37,13 @@ export function DashboardLayoutClient({
 	} = useDashboardState({
 		initialOrganizationsData,
 		initialProjectsData,
+		selectedOrgId,
+		selectedProjectId,
 	});
+
+	useEffect(() => {
+		posthog.capture("page_viewed_dashboard");
+	}, [posthog]);
 
 	return (
 		<div className="flex min-h-screen w-full flex-col">
@@ -40,6 +53,7 @@ export function DashboardLayoutClient({
 					organizations={organizations}
 					onSelectOrganization={handleOrganizationSelect}
 					onOrganizationCreated={handleOrganizationCreated}
+					selectedOrganization={selectedOrganization}
 				/>
 				<div className="flex flex-1 flex-col justify-center">
 					<TopBar
@@ -49,7 +63,7 @@ export function DashboardLayoutClient({
 						selectedOrganization={selectedOrganization}
 						onProjectCreated={handleProjectCreated}
 					/>
-					<main className="bg-background max-w-7xl mx-auto w-full flex-1 overflow-y-auto pt-10 pb-4 px-4 md:p-6 lg:p-8">
+					<main className="bg-background w-full flex-1 overflow-y-auto pt-10 pb-4 px-4 md:p-6 lg:p-8">
 						{children}
 					</main>
 				</div>

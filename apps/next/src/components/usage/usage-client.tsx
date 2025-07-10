@@ -23,6 +23,7 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "@/lib/components/tabs";
+import { useDashboardNavigation } from "@/hooks/useDashboardNavigation";
 import type { ActivitT } from "@/types/activity";
 
 interface UsageClientProps {
@@ -32,6 +33,7 @@ interface UsageClientProps {
 export function UsageClient({ initialActivityData }: UsageClientProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const { buildUrl } = useDashboardNavigation();
 
 	// Check if days parameter exists in URL
 	const daysParam = searchParams.get("days");
@@ -42,15 +44,15 @@ export function UsageClient({ initialActivityData }: UsageClientProps) {
 		if (!daysParam) {
 			const params = new URLSearchParams(searchParams);
 			params.set("days", "7");
-			router.replace(`/dashboard/usage?${params.toString()}`);
+			router.replace(`${buildUrl("usage")}?${params.toString()}`);
 		}
-	}, [daysParam, router, searchParams]);
+	}, [daysParam, router, searchParams, buildUrl]);
 
 	// Function to update days in URL
 	const updateDaysInUrl = (newDays: 7 | 30) => {
 		const params = new URLSearchParams(searchParams);
 		params.set("days", String(newDays));
-		router.push(`/dashboard/usage?${params.toString()}`);
+		router.push(`${buildUrl("usage")}?${params.toString()}`);
 	};
 
 	return (

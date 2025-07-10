@@ -52,6 +52,7 @@ export const Navbar = () => {
 								href="/"
 								aria-label="home"
 								className="flex items-center space-x-2"
+								prefetch={true}
 							>
 								<Logo className="h-8 w-8 rounded-full text-black dark:text-white" />
 								<span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
@@ -86,6 +87,7 @@ export const Navbar = () => {
 											<Link
 												href={item.href}
 												className="text-muted-foreground hover:text-accent-foreground block duration-150 px-4 py-2"
+												prefetch={true}
 											>
 												{item.name}
 											</Link>
@@ -113,6 +115,7 @@ export const Navbar = () => {
 												<Link
 													href={item.href}
 													className="text-muted-foreground hover:text-accent-foreground block duration-150"
+													prefetch={true}
 												>
 													{item.name}
 												</Link>

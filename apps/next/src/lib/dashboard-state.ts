@@ -1,8 +1,7 @@
 "use client";
 
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { usePostHog } from "posthog-js/react";
-import { useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useCallback } from "react";
 
 import { useUser } from "@/hooks/useUser";
 import { useApi } from "@/lib/fetch-client";
@@ -11,23 +10,20 @@ import type { Organization, Project } from "@/lib/types";
 interface UseDashboardStateProps {
 	initialOrganizationsData?: unknown;
 	initialProjectsData?: unknown;
+	selectedOrgId?: string;
+	selectedProjectId?: string;
 }
 
 export function useDashboardState({
 	initialOrganizationsData,
 	initialProjectsData,
+	selectedOrgId,
+	selectedProjectId,
 }: UseDashboardStateProps = {}) {
-	const posthog = usePostHog();
-	const pathname = usePathname();
-	const searchParams = useSearchParams();
 	const router = useRouter();
 	const api = useApi();
 
 	useUser({ redirectTo: "/login", redirectWhen: "unauthenticated" });
-
-	// Get URL parameters
-	const orgId = searchParams.get("orgId");
-	const projectId = searchParams.get("projectId");
 
 	// Fetch organizations
 	const { data: organizationsData } = api.useQuery(
@@ -47,13 +43,13 @@ export function useDashboardState({
 		[organizationsData?.organizations],
 	);
 
-	// Derive selected organization from URL or default to first
+	// Derive selected organization from props or default to first
 	const selectedOrganization = useMemo(() => {
-		if (orgId) {
-			return organizations.find((org) => org.id === orgId) || null;
+		if (selectedOrgId) {
+			return organizations.find((org) => org.id === selectedOrgId) || null;
 		}
 		return organizations[0] || null;
-	}, [orgId, organizations]);
+	}, [selectedOrgId, organizations]);
 
 	// Fetch projects for selected organization
 	const { data: projectsData } = api.useQuery(
@@ -80,87 +76,51 @@ export function useDashboardState({
 		[projectsData?.projects],
 	);
 
-	// Derive selected project from URL
+	// Derive selected project from props
 	const selectedProject = useMemo(() => {
-		if (projectId && projects.length > 0) {
-			return projects.find((project) => project.id === projectId) || null;
+		if (selectedProjectId && projects.length > 0) {
+			return (
+				projects.find((project) => project.id === selectedProjectId) || null
+			);
 		}
 		return projects[0] || null;
-	}, [projectId, projects]);
+	}, [selectedProjectId, projects]);
 
-	// Auto-select first organization if none selected
-	useEffect(() => {
-		if (organizations.length > 0 && !orgId) {
-			const params = new URLSearchParams(searchParams.toString());
-			params.set("orgId", organizations[0].id);
-			router.replace(`${pathname}?${params.toString()}`);
-		}
-	}, [organizations, orgId, pathname, router]);
-
-	// Auto-select first project if none selected
-	useEffect(() => {
-		if (projects.length > 0 && !projectId && selectedOrganization) {
-			const firstProject = projects[0];
-			if (
-				firstProject &&
-				firstProject.organizationId === selectedOrganization.id
-			) {
-				const params = new URLSearchParams(searchParams.toString());
-				params.set("projectId", firstProject.id);
-				router.replace(`${pathname}?${params.toString()}`);
-			}
-		}
-	}, [projects, projectId, selectedOrganization, pathname, router]);
-
-	useEffect(() => {
-		posthog.capture("page_viewed_dashboard");
-	}, [posthog]);
-
-	// URL update functions
+	// Navigation functions for the new route structure
 	const handleOrganizationCreated = useCallback(
 		(org: Organization) => {
-			const params = new URLSearchParams(searchParams.toString());
-			params.set("orgId", org.id);
-			params.delete("projectId"); // Clear project when switching organizations
-			router.replace(`${pathname}?${params.toString()}`);
+			// Navigate to the new organization with first project
+			router.push(`/dashboard/${org.id}`);
 		},
-		[searchParams, pathname, router],
+		[router],
 	);
 
 	const handleProjectCreated = useCallback(
 		(project: Project) => {
-			const params = new URLSearchParams(searchParams.toString());
-			params.set("projectId", project.id);
-			router.replace(`${pathname}?${params.toString()}`);
+			// Navigate to the new project
+			router.push(`/dashboard/${project.organizationId}/${project.id}`);
 		},
-		[searchParams, pathname, router],
+		[router],
 	);
 
 	const handleOrganizationSelect = useCallback(
 		(org: Organization | null) => {
-			const params = new URLSearchParams(searchParams.toString());
 			if (org?.id) {
-				params.set("orgId", org.id);
-			} else {
-				params.delete("orgId");
+				// Navigate to the new organization
+				router.push(`/dashboard/${org.id}`);
 			}
-			params.delete("projectId"); // Clear project when switching organizations
-			router.replace(`${pathname}?${params.toString()}`);
 		},
-		[searchParams, pathname, router],
+		[router],
 	);
 
 	const handleProjectSelect = useCallback(
 		(project: Project | null) => {
-			const params = new URLSearchParams(searchParams.toString());
 			if (project?.id) {
-				params.set("projectId", project.id);
-			} else {
-				params.delete("projectId");
+				// Navigate to the new project
+				router.push(`/dashboard/${project.organizationId}/${project.id}`);
 			}
-			router.replace(`${pathname}?${params.toString()}`);
 		},
-		[searchParams, pathname, router],
+		[router],
 	);
 
 	return {

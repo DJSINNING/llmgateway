@@ -2,12 +2,10 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import Link from "next/link";
 
 import { AutoTopUpSettings } from "@/components/billing/auto-topup-settings";
 import { PlanManagement } from "@/components/billing/plan-management";
 import { PaymentMethodsManagement } from "@/components/credits/payment-methods-management";
-import { Button } from "@/lib/components/button";
 import {
 	Card,
 	CardContent,
@@ -16,11 +14,13 @@ import {
 	CardTitle,
 } from "@/lib/components/card";
 import { useToast } from "@/lib/components/use-toast";
+import { useDashboardNavigation } from "@/hooks/useDashboardNavigation";
 
 export default function BillingPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { toast } = useToast();
+	const { buildUrl } = useDashboardNavigation();
 
 	const success = searchParams.get("success");
 	const canceled = searchParams.get("canceled");
@@ -32,7 +32,7 @@ export default function BillingPage() {
 				description: "Your payment has been processed successfully.",
 			});
 			// Clean up the URL
-			router.replace("/dashboard/settings/billing");
+			router.replace(buildUrl("settings/billing"));
 		}
 		if (canceled) {
 			toast({
@@ -41,9 +41,9 @@ export default function BillingPage() {
 				variant: "destructive",
 			});
 			// Clean up the URL
-			router.replace("/dashboard/settings/billing");
+			router.replace(buildUrl("settings/billing"));
 		}
-	}, [success, canceled, toast, router]);
+	}, [success, canceled, toast, router, buildUrl]);
 
 	return (
 		<div className="flex flex-col">

@@ -1,6 +1,8 @@
+"use client";
+
 import { addDays, format, parseISO, subDays } from "date-fns";
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
 	Bar,
 	BarChart,
@@ -12,7 +14,6 @@ import {
 	YAxis,
 } from "recharts";
 
-import { Button } from "@/lib/components/button";
 import {
 	Card,
 	CardContent,
@@ -27,21 +28,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/lib/components/select";
-import { useDashboardState } from "@/lib/dashboard-state";
+import { useDashboardNavigation } from "@/hooks/useDashboardNavigation";
 import { useApi } from "@/lib/fetch-client";
-
-import type {
-	ActivitT,
-	ActivityModelUsage,
-	DailyActivity,
-} from "@/types/activity";
+import type { ActivitT } from "@/types/activity";
 import type { TooltipProps } from "recharts";
 
 // Helper function to get all unique models from the data
 function getUniqueModels(
-	data: {
-		modelBreakdown: { model: string }[];
-	}[],
+	data: { modelBreakdown: { model: string }[] }[],
 ): string[] {
 	if (!data || data.length === 0) {
 		return [];
@@ -79,23 +73,27 @@ function getModelColor(model: string, index: number): string {
 	return colors[index % colors.length];
 }
 
-interface CustomTooltipProps extends TooltipProps<number, string> {
-	active?: boolean;
-	payload?: {
-		dataKey: string;
-		value: number;
-		color: string;
-		name: string;
-		payload: {
+interface TooltipPayload {
+	dataKey: string;
+	name: string;
+	value: number;
+	color: string;
+	payload: {
+		requestCount: number;
+		totalTokens: number;
+		cost: number;
+		modelBreakdown: {
+			model: string;
 			requestCount: number;
 			cost: number;
 			totalTokens: number;
-			modelBreakdown: {
-				model: string;
-				requestCount: number;
-			}[];
-		};
-	}[];
+		}[];
+	};
+}
+
+interface CustomTooltipProps extends TooltipProps<number, string> {
+	active?: boolean;
+	payload?: TooltipPayload[];
 	label?: string;
 	breakdownField?: "requests" | "cost" | "tokens";
 }
@@ -180,23 +178,16 @@ interface ActivityChartProps {
 }
 
 export function ActivityChart({ initialData }: ActivityChartProps) {
-	const router = useRouter();
 	const searchParams = useSearchParams();
-
-	const daysParam = searchParams.get("days");
-	const days = (daysParam === "30" ? 30 : 7) as 7 | 30;
-
-	const updateDaysInUrl = (newDays: 7 | 30) => {
-		const params = new URLSearchParams(searchParams.toString());
-		params.set("days", String(newDays));
-		router.push(`/dashboard/activity?${params.toString()}`);
-	};
-
 	const [breakdownField, setBreakdownField] = useState<
 		"requests" | "cost" | "tokens"
 	>("requests");
-	const { selectedProject } = useDashboardState();
+	const { selectedProject } = useDashboardNavigation();
 	const api = useApi();
+
+	// Get days from URL parameter
+	const daysParam = searchParams.get("days");
+	const days = daysParam === "30" ? 30 : 7;
 
 	const { data, isLoading, error } = api.useQuery(
 		"get",
@@ -272,51 +263,16 @@ export function ActivityChart({ initialData }: ActivityChartProps) {
 	if (!data || data.activity.length === 0) {
 		return (
 			<Card>
-				<CardHeader className="flex flex-col space-y-4 md:flex-row items-center justify-between pb-2">
-					<div>
-						<CardTitle>Model Usage Overview</CardTitle>
-						<CardDescription>
-							Stacked model {breakdownField} over the last {days} days
-							{selectedProject && (
-								<span className="block mt-1 text-sm">
-									Project: {selectedProject.name}
-								</span>
-							)}
-						</CardDescription>
-					</div>
-					<div className="flex items-center space-x-2">
-						<Select
-							value={breakdownField}
-							onValueChange={(value) =>
-								setBreakdownField(value as "requests" | "cost" | "tokens")
-							}
-						>
-							<SelectTrigger className="w-[140px]">
-								<SelectValue placeholder="Select metric" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="requests">Requests</SelectItem>
-								<SelectItem value="cost">Cost</SelectItem>
-								<SelectItem value="tokens">Tokens</SelectItem>
-							</SelectContent>
-						</Select>
-						<div className="flex space-x-2">
-							<Button
-								variant={days === 7 ? "default" : "outline"}
-								size="sm"
-								onClick={() => updateDaysInUrl(7)}
-							>
-								7 Days
-							</Button>
-							<Button
-								variant={days === 30 ? "default" : "outline"}
-								size="sm"
-								onClick={() => updateDaysInUrl(30)}
-							>
-								30 Days
-							</Button>
-						</div>
-					</div>
+				<CardHeader>
+					<CardTitle>Model Usage Overview</CardTitle>
+					<CardDescription>
+						Stacked model {breakdownField} over the last {days} days
+						{selectedProject && (
+							<span className="block mt-1 text-sm">
+								Project: {selectedProject.name}
+							</span>
+						)}
+					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className="flex h-[350px] items-center justify-center">
@@ -347,11 +303,19 @@ export function ActivityChart({ initialData }: ActivityChartProps) {
 			const dayData = dataByDate.get(date)!;
 
 			// Process model breakdown data for stacked bars
-			const result = {
+			const result: Record<
+				string,
+				| string
+				| number
+				| {
+						model: string;
+						requestCount: number;
+						cost: number;
+						totalTokens: number;
+				  }[]
+			> = {
 				...dayData,
 				formattedDate: format(parseISO(date), "MMM d"),
-			} as DailyActivity & {
-				[key: string]: number | string | ActivityModelUsage[];
 			};
 
 			// Add each model's selected metric as a separate property for stacking
@@ -414,22 +378,6 @@ export function ActivityChart({ initialData }: ActivityChartProps) {
 							<SelectItem value="tokens">Tokens</SelectItem>
 						</SelectContent>
 					</Select>
-					<div className="flex space-x-2">
-						<Button
-							variant={days === 7 ? "default" : "outline"}
-							size="sm"
-							onClick={() => updateDaysInUrl(7)}
-						>
-							7 Days
-						</Button>
-						<Button
-							variant={days === 30 ? "default" : "outline"}
-							size="sm"
-							onClick={() => updateDaysInUrl(30)}
-						>
-							30 Days
-						</Button>
-					</div>
 				</div>
 			</CardHeader>
 			<CardContent>

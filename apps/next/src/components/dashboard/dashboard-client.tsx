@@ -24,9 +24,8 @@ import {
 	CardTitle,
 } from "@/lib/components/card";
 import { Tabs, TabsList, TabsTrigger } from "@/lib/components/tabs";
-import { useDashboardState } from "@/lib/dashboard-state";
 import { useApi } from "@/lib/fetch-client";
-import { preserveOrgAndProjectParams } from "@/lib/navigation-utils";
+import { useDashboardNavigation } from "@/hooks/useDashboardNavigation";
 import { cn } from "@/lib/utils";
 import type { ActivitT } from "@/types/activity";
 import { Overview } from "@/components/dashboard/overview";
@@ -38,6 +37,7 @@ interface DashboardClientProps {
 export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const { buildUrl } = useDashboardNavigation();
 
 	// Get days from URL params, fallback to initialDays, then to 7
 	const daysParam = searchParams.get("days");
@@ -48,11 +48,11 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 		if (!daysParam) {
 			const params = new URLSearchParams(searchParams.toString());
 			params.set("days", "7");
-			router.replace(`/dashboard?${params.toString()}`);
+			router.replace(`${buildUrl()}?${params.toString()}`);
 		}
-	}, [daysParam, searchParams, router]);
+	}, [daysParam, searchParams, router, buildUrl]);
 
-	const { selectedOrganization, selectedProject } = useDashboardState();
+	const { selectedOrganization, selectedProject } = useDashboardNavigation();
 	const api = useApi();
 
 	const { data, isLoading, error } = api.useQuery(
@@ -79,7 +79,7 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 	const updateDaysInUrl = (newDays: 7 | 30) => {
 		const params = new URLSearchParams(searchParams.toString());
 		params.set("days", String(newDays));
-		router.push(`/dashboard?${params.toString()}`);
+		router.push(`${buildUrl()}?${params.toString()}`);
 	};
 
 	const activityData = data?.activity || [];
@@ -173,12 +173,7 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 					<div className="flex items-center space-x-2">
 						{selectedOrganization && <TopUpCreditsButton />}
 						<Button asChild>
-							<Link
-								href={preserveOrgAndProjectParams(
-									"/dashboard/provider-keys",
-									searchParams,
-								)}
-							>
+							<Link href={buildUrl("provider-keys")} prefetch={true}>
 								<Plus className="mr-2 h-4 w-4" />
 								Add Provider
 							</Link>
@@ -386,7 +381,7 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 									variant="outline"
 									className="w-full justify-start"
 								>
-									<Link href="/dashboard/api-keys">
+									<Link href={buildUrl("api-keys")} prefetch={true}>
 										<Key className="mr-2 h-4 w-4" />
 										Manage API Keys
 									</Link>
@@ -396,7 +391,7 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 									variant="outline"
 									className="w-full justify-start"
 								>
-									<Link href="/dashboard/provider-keys">
+									<Link href={buildUrl("provider-keys")} prefetch={true}>
 										<KeyRound className="mr-2 h-4 w-4" />
 										Provider Keys
 									</Link>
@@ -406,7 +401,7 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 									variant="outline"
 									className="w-full justify-start"
 								>
-									<Link href="/dashboard/activity">
+									<Link href={buildUrl("activity")} prefetch={true}>
 										<Activity className="mr-2 h-4 w-4" />
 										View Activity
 									</Link>

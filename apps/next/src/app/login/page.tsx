@@ -1,12 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/lib/components/button";
 import {
@@ -20,6 +22,7 @@ import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { useAuth } from "@/lib/auth-client";
 import { useUser } from "@/hooks/useUser";
+import { toast } from "@/lib/components/use-toast";
 
 const loginSchema = z.object({
 	email: z.string().email("Please enter a valid email address"),
@@ -30,11 +33,17 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function Login() {
 	const router = useRouter();
+	const queryClient = useQueryClient();
+	const posthog = usePostHog();
 	const [showPassword, setShowPassword] = useState(false);
 	const { signIn } = useAuth();
 
 	// Redirect to dashboard if already authenticated
 	useUser({ redirectTo: "/dashboard", redirectWhen: "authenticated" });
+
+	useEffect(() => {
+		posthog.capture("page_viewed_login");
+	}, [posthog]);
 
 	const {
 		register,
@@ -51,7 +60,17 @@ export default function Login() {
 				email: data.email,
 				password: data.password,
 				fetchOptions: {
-					onSuccess: () => {
+					onSuccess: (ctx) => {
+						queryClient.clear();
+						posthog.identify(ctx.data.user.id, {
+							email: ctx.data.user.email,
+							name: ctx.data.user.name,
+						});
+						posthog.capture("user_logged_in", {
+							method: "email",
+							email: data.email,
+						});
+						toast({ title: "Login successful" });
 						router.push("/dashboard");
 					},
 					onError: (ctx) => {

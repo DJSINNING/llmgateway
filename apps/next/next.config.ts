@@ -6,7 +6,10 @@ const nextConfig: NextConfig = {
 		return [
 			{
 				source: "/api/:path*",
-				destination: "http://localhost:4002/:path*",
+				destination:
+					process.env.NODE_ENV === "development"
+						? "http://localhost:4002/:path*"
+						: "https://api.llmgateway.io/:path*",
 			},
 		];
 	},

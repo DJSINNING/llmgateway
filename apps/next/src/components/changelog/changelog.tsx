@@ -49,7 +49,9 @@ export function ChangelogComponent({ entries }: ChangelogComponentProps = {}) {
 							<div className="space-y-8">
 								<div className="space-y-4">
 									<h2 className="text-2xl font-medium text-foreground hover:text-muted-foreground transition-colors">
-										<Link href={`/changelog/${entry.slug}`}>{entry.title}</Link>
+										<Link href={`/changelog/${entry.slug}`} prefetch={true}>
+											{entry.title}
+										</Link>
 									</h2>
 									<p className="text-muted-foreground leading-relaxed">
 										{entry.summary}
@@ -57,12 +59,13 @@ export function ChangelogComponent({ entries }: ChangelogComponentProps = {}) {
 									<Link
 										href={`/changelog/${entry.slug}`}
 										className="text-sm text-primary hover:text-primary/80"
+										prefetch={true}
 									>
 										Read more &rarr;
 									</Link>
 								</div>
 								<div className="bg-card border border-border rounded-lg overflow-hidden">
-									<Link href={`/changelog/${entry.slug}`}>
+									<Link href={`/changelog/${entry.slug}`} prefetch={true}>
 										<Image
 											src={entry.image.src}
 											alt={entry.image.alt}
